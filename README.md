@@ -29,7 +29,7 @@ Add a target configuration to the caller repository, then use:
 
 ```yaml
 - name: Create checkout release passport
-  uses: Muhammad02-dev/checkout-release-passport@v0.2.0
+  uses: Muhammad-Zonain/checkout-release-passport@v0.2.0
   with:
     config_path: .checkout-evidence/staging.json
     ack_authorized: "true"
