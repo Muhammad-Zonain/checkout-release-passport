@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/checkout-evidence/snapshot.schema.json",
+  "title": "Checkout Evidence Snapshot",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "engine",
+    "captured_at",
+    "target",
+    "page",
+    "scripts",
+    "network_origins",
+    "privacy",
+    "snapshot_sha256"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "captured_at": { "type": "string", "format": "date-time" },
+    "snapshot_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "scripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dom_index", "kind", "type", "content_sha256"],
+        "properties": {
+          "dom_index": { "type": "integer", "minimum": 0 },
+          "kind": { "enum": ["external", "inline"] },
+          "src": { "type": ["string", "null"] },
+          "content_sha256": { "type": ["string", "null"] }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,19 @@
+{
+  "target_id": "local-demo-checkout",
+  "name": "Local Demo Checkout",
+  "url": "http://127.0.0.1:4173/checkout.html",
+  "output_dir": "../evidence",
+  "approvals_file": "demo-approvals.json",
+  "authorization": {
+    "confirmed": true,
+    "confirmed_by": "Local Demo Operator",
+    "confirmed_at": "2026-07-18",
+    "scope_note": "Locally hosted demonstration page owned and controlled by the operator"
+  },
+  "scan": {
+    "mode": "static",
+    "wait_until": "networkidle",
+    "timeout_ms": 30000,
+    "post_load_wait_ms": 500
+  }
+}

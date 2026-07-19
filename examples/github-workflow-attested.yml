@@ -1,0 +1,31 @@
+name: Attested checkout release passport
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  checkout-release-passport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create checkout release passport
+        id: passport
+        uses: Muhammad02-dev/checkout-release-passport@v0.2.0
+        with:
+          config_path: .checkout-evidence/staging.json
+          ack_authorized: "true"
+          install_browser: "true"
+          fail_on_review: "true"
+
+      # Available for public repositories on current GitHub Free/Pro/Team plans.
+      # Private/internal repositories require GitHub Enterprise Cloud.
+      - name: Attest passport provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.passport.outputs.passport_path }}

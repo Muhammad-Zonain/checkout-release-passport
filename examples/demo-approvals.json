@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "target_id": "local-demo-checkout",
+  "approvals": [
+    {
+      "approval_id": "demo-payment-sdk",
+      "kind": "external",
+      "match_type": "exact",
+      "match": "http://127.0.0.1:4173/static/payment-sdk.js",
+      "owner": "Demo Payments",
+      "purpose": "Render the non-transactional demonstration payment component",
+      "approved_by": "Local Demo Operator",
+      "approved_at": "2026-07-18",
+      "expires_at": null
+    },
+    {
+      "approval_id": "demo-storefront",
+      "kind": "external",
+      "match_type": "exact",
+      "match": "http://127.0.0.1:4173/static/storefront.js",
+      "owner": "Demo Storefront",
+      "purpose": "Initialize the harmless local checkout demonstration",
+      "approved_by": "Local Demo Operator",
+      "approved_at": "2026-07-18",
+      "expires_at": null
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkout-release-evidence.dev/schemas/release-passport.schema.json",
+  "title": "Checkout Release Passport",
+  "type": "object",
+  "required": ["schema_version", "kind", "passport_id", "passport_sha256", "created_at", "target", "authorization", "release", "decision", "evidence", "data_boundaries", "limitations"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "kind": { "const": "checkout-release-passport" },
+    "passport_id": { "type": "string", "pattern": "^crp_[a-f0-9]{20}$" },
+    "passport_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "target": { "type": "object" },
+    "authorization": { "type": "object" },
+    "release": { "type": "object" },
+    "decision": { "type": "object" },
+    "evidence": { "type": "object" },
+    "data_boundaries": { "type": "object" },
+    "limitations": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+  },
+  "additionalProperties": false
+}

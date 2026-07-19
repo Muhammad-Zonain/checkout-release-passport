@@ -1,0 +1,86 @@
+name: Checkout Release Passport
+description: Create client-owned evidence of authorized checkout script and security-header changes before release.
+author: Muhammad Zonain
+
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  config_path:
+    description: Path to the authorized target configuration in the caller repository.
+    required: true
+  ack_authorized:
+    description: Must be true only when the workflow owner is authorized to inspect the configured target.
+    required: true
+  install_browser:
+    description: Install Playwright Chromium for browser-mode configurations.
+    required: false
+    default: "true"
+  fail_on_review:
+    description: Fail the job after evidence upload when the result is REVIEW_REQUIRED.
+    required: false
+    default: "true"
+
+outputs:
+  status:
+    description: PASS or REVIEW_REQUIRED.
+    value: ${{ steps.scan.outputs.status }}
+  passport_id:
+    description: Stable identifier for the generated passport.
+    value: ${{ steps.scan.outputs.passport_id }}
+  passport_path:
+    description: Path to the generated passport JSON.
+    value: ${{ steps.scan.outputs.passport_path }}
+  report_path:
+    description: Path to the generated HTML report.
+    value: ${{ steps.scan.outputs.report_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Verify explicit authorization acknowledgement
+      shell: bash
+      env:
+        ACK_AUTHORIZED: ${{ inputs.ack_authorized }}
+      run: |
+        if [ "$ACK_AUTHORIZED" != "true" ]; then
+          echo "Refusing to run: ack_authorized must be exactly true for a target you own or are explicitly authorized to inspect."
+          exit 1
+        fi
+
+    - name: Install release-passport dependencies
+      shell: bash
+      run: npm ci --ignore-scripts --prefix "$GITHUB_ACTION_PATH"
+
+    - name: Install Chromium for browser mode
+      if: ${{ inputs.install_browser == 'true' }}
+      shell: bash
+      run: |
+        cd "$GITHUB_ACTION_PATH"
+        npx playwright install --with-deps chromium
+
+    - name: Create checkout release passport
+      id: scan
+      shell: bash
+      env:
+        CONFIG_PATH: ${{ inputs.config_path }}
+      run: node "$GITHUB_ACTION_PATH/src/cli.js" check --config "$CONFIG_PATH" --ack-authorized --no-fail
+
+    - name: Upload client-owned evidence
+      uses: actions/upload-artifact@v7
+      with:
+        name: checkout-release-passport-${{ github.run_id }}
+        if-no-files-found: error
+        retention-days: 30
+        path: |
+          ${{ steps.scan.outputs.passport_path }}
+          ${{ steps.scan.outputs.report_path }}
+          ${{ steps.scan.outputs.comparison_path }}
+
+    - name: Enforce review gate
+      if: ${{ inputs.fail_on_review == 'true' && steps.scan.outputs.status == 'REVIEW_REQUIRED' }}
+      shell: bash
+      run: |
+        echo "Checkout release requires documented human review. Evidence was uploaded before this gate failed."
+        exit 2

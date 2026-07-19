@@ -1,0 +1,25 @@
+{
+  "name": "checkout-release-passport",
+  "version": "0.2.0",
+  "description": "A local-first checkout release passport and CI gate for authorized script and security-header changes.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "checkout-evidence": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "demo:v1": "node scripts/demo-server.js --version 1",
+    "demo:v2": "node scripts/demo-server.js --version 2",
+    "baseline:demo": "node src/cli.js baseline --config examples/demo-target.json --ack-authorized",
+    "check:demo": "node src/cli.js check --config examples/demo-target.json --ack-authorized --no-fail",
+    "verify:passport": "bash scripts/verify-passport-demo.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "parse5": "^7.3.0",
+    "playwright": "^1.55.0"
+  }
+}

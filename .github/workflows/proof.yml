@@ -1,0 +1,51 @@
+name: Product proof
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests-and-passport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run safety and integrity tests
+        run: npm test
+
+      - name: Start owned checkout fixture and capture baseline
+        run: |
+          nohup node scripts/demo-server.js --version 1 > /tmp/checkout-passport-demo.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/checkout.html >/dev/null; then
+              break
+            fi
+            sleep 0.1
+          done
+          curl --fail --silent http://127.0.0.1:4173/checkout.html >/dev/null
+          node src/cli.js baseline --config examples/demo-target.json --ack-authorized
+
+      - name: Prove the local Action produces a PASS passport
+        id: passport
+        uses: ./
+        with:
+          config_path: examples/demo-target.json
+          ack_authorized: "true"
+          install_browser: "false"
+          fail_on_review: "true"
+
+      - name: Verify the generated passport digest
+        run: node src/cli.js verify-passport --file "${{ steps.passport.outputs.passport_path }}"
