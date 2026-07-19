@@ -135,4 +135,6 @@ The open Action is the distribution layer. Future paid agency capabilities, if v
 
 **Muhammad Zonain**  
 MSc Computer Systems Engineering  
-`mzonain2@gmail.com`
+GitHub: [@Muhammad-Zonain](https://github.com/Muhammad-Zonain)
+
+For support, please use this repository's Issues tab.
