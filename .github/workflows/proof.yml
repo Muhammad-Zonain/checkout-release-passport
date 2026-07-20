@@ -45,6 +45,7 @@ jobs:
         uses: ./
         with:
           operation: baseline
+          force_baseline: "true"
           config_path: examples/demo-target.json
           ack_authorized: "true"
           install_browser: "false"
