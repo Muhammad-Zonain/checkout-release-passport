@@ -7,6 +7,18 @@ branding:
   color: green
 
 inputs:
+  operation:
+    description: Create a reviewed baseline or check the target against an existing baseline. Use baseline only during explicit onboarding.
+    required: false
+    default: "check"
+  force_baseline:
+    description: Replace an existing baseline only after an explicit reviewed reset decision.
+    required: false
+    default: "false"
+  artifact_suffix:
+    description: Safe unique suffix when the same target and operation are invoked more than once in one job.
+    required: false
+    default: "default"
   config_path:
     description: Path to the authorized target configuration in the caller repository.
     required: true
@@ -24,8 +36,20 @@ inputs:
 
 outputs:
   status:
-    description: PASS or REVIEW_REQUIRED.
+    description: BASELINE_CREATED, PASS, or REVIEW_REQUIRED.
     value: ${{ steps.scan.outputs.status }}
+  target_id:
+    description: Validated target identifier from the caller configuration.
+    value: ${{ steps.scan.outputs.target_id }}
+  snapshot_path:
+    description: Path to the immutable current snapshot created by either operation.
+    value: ${{ steps.scan.outputs.snapshot_path }}
+  baseline_path:
+    description: Path to baseline.json created by a baseline operation.
+    value: ${{ steps.scan.outputs.baseline_path }}
+  approval_template_path:
+    description: Path to the approval template created by a baseline operation.
+    value: ${{ steps.scan.outputs.approval_template_path }}
   passport_id:
     description: Stable identifier for the generated passport.
     value: ${{ steps.scan.outputs.passport_id }}
@@ -35,6 +59,12 @@ outputs:
   report_path:
     description: Path to the generated HTML report.
     value: ${{ steps.scan.outputs.report_path }}
+  comparison_path:
+    description: Path to the generated comparison JSON.
+    value: ${{ steps.scan.outputs.comparison_path }}
+  passport_sha256:
+    description: Canonical digest of the generated release passport.
+    value: ${{ steps.scan.outputs.passport_sha256 }}
 
 runs:
   using: composite
@@ -43,9 +73,24 @@ runs:
       shell: bash
       env:
         ACK_AUTHORIZED: ${{ inputs.ack_authorized }}
+        OPERATION: ${{ inputs.operation }}
+        FORCE_BASELINE: ${{ inputs.force_baseline }}
+        ARTIFACT_SUFFIX: ${{ inputs.artifact_suffix }}
       run: |
         if [ "$ACK_AUTHORIZED" != "true" ]; then
           echo "Refusing to run: ack_authorized must be exactly true for a target you own or are explicitly authorized to inspect."
+          exit 1
+        fi
+        if [ "$OPERATION" != "baseline" ] && [ "$OPERATION" != "check" ]; then
+          echo "Refusing to run: operation must be exactly baseline or check."
+          exit 1
+        fi
+        if [ "$FORCE_BASELINE" != "true" ] && [ "$FORCE_BASELINE" != "false" ]; then
+          echo "Refusing to run: force_baseline must be exactly true or false."
+          exit 1
+        fi
+        if [[ ! "$ARTIFACT_SUFFIX" =~ ^[A-Za-z0-9._-]{1,64}$ ]]; then
+          echo "Refusing to run: artifact_suffix must contain 1-64 letters, numbers, dots, underscores, or hyphens."
           exit 1
         fi
 
@@ -60,26 +105,53 @@ runs:
         cd "$GITHUB_ACTION_PATH"
         npx playwright install --with-deps chromium
 
-    - name: Create checkout release passport
+    - name: Create checkout release evidence
       id: scan
       shell: bash
       env:
         CONFIG_PATH: ${{ inputs.config_path }}
-      run: node "$GITHUB_ACTION_PATH/src/cli.js" check --config "$CONFIG_PATH" --ack-authorized --no-fail
+        OPERATION: ${{ inputs.operation }}
+        FORCE_BASELINE: ${{ inputs.force_baseline }}
+        CHECKOUT_PASSPORT_ACTION_REPOSITORY: ${{ github.action_repository }}
+        CHECKOUT_PASSPORT_ACTION_REF: ${{ github.action_ref }}
+      run: |
+        if [ "$OPERATION" = "baseline" ]; then
+          if [ "$FORCE_BASELINE" = "true" ]; then
+            node "$GITHUB_ACTION_PATH/src/cli.js" baseline --config "$CONFIG_PATH" --ack-authorized --force-baseline
+          else
+            node "$GITHUB_ACTION_PATH/src/cli.js" baseline --config "$CONFIG_PATH" --ack-authorized
+          fi
+        else
+          node "$GITHUB_ACTION_PATH/src/cli.js" check --config "$CONFIG_PATH" --ack-authorized --no-fail
+        fi
 
-    - name: Upload client-owned evidence
+    - name: Upload baseline onboarding evidence
+      if: ${{ inputs.operation == 'baseline' }}
       uses: actions/upload-artifact@v7
       with:
-        name: checkout-release-passport-${{ github.run_id }}
+        name: checkout-release-passport-${{ steps.scan.outputs.target_id }}-baseline-${{ github.job }}-${{ inputs.artifact_suffix }}-${{ github.run_id }}-${{ github.run_attempt }}
+        if-no-files-found: error
+        retention-days: 30
+        path: |
+          ${{ steps.scan.outputs.snapshot_path }}
+          ${{ steps.scan.outputs.baseline_path }}
+          ${{ steps.scan.outputs.approval_template_path }}
+
+    - name: Upload client-owned release evidence
+      if: ${{ inputs.operation == 'check' }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: checkout-release-passport-${{ steps.scan.outputs.target_id }}-check-${{ github.job }}-${{ inputs.artifact_suffix }}-${{ github.run_id }}-${{ github.run_attempt }}
         if-no-files-found: error
         retention-days: 30
         path: |
           ${{ steps.scan.outputs.passport_path }}
+          ${{ steps.scan.outputs.snapshot_path }}
           ${{ steps.scan.outputs.report_path }}
           ${{ steps.scan.outputs.comparison_path }}
 
     - name: Enforce review gate
-      if: ${{ inputs.fail_on_review == 'true' && steps.scan.outputs.status == 'REVIEW_REQUIRED' }}
+      if: ${{ inputs.operation == 'check' && inputs.fail_on_review == 'true' && steps.scan.outputs.status == 'REVIEW_REQUIRED' }}
       shell: bash
       run: |
         echo "Checkout release requires documented human review. Evidence was uploaded before this gate failed."

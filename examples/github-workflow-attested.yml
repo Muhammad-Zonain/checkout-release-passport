@@ -16,8 +16,9 @@ jobs:
 
       - name: Create checkout release passport
         id: passport
-        uses: Muhammad02-dev/checkout-release-passport@v0.2.0
+        uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
         with:
+          operation: check
           config_path: .checkout-evidence/staging.json
           ack_authorized: "true"
           install_browser: "true"

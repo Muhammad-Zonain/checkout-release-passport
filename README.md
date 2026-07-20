@@ -1,5 +1,10 @@
 # Checkout Release Passport
 
+[![Product proof](https://github.com/Muhammad-Zonain/checkout-release-passport/actions/workflows/proof.yml/badge.svg)](https://github.com/Muhammad-Zonain/checkout-release-passport/actions/workflows/proof.yml)
+[![GitHub Marketplace](https://img.shields.io/badge/GitHub%20Marketplace-Checkout%20Release%20Passport-2ea44f?logo=github)](https://github.com/marketplace/actions/checkout-release-passport)
+[![Latest release](https://img.shields.io/github/v/release/Muhammad-Zonain/checkout-release-passport)](https://github.com/Muhammad-Zonain/checkout-release-passport/releases/latest)
+[![License](https://img.shields.io/github/license/Muhammad-Zonain/checkout-release-passport)](LICENSE)
+
 > A local-first checkout release evidence gate for ecommerce agencies.
 
 Software bills of materials describe code and packages. They do not necessarily record what a browser actually received at checkout, which security-impacting headers changed, who approved the change, or whether a release should stop.
@@ -29,8 +34,9 @@ Add a target configuration to the caller repository, then use:
 
 ```yaml
 - name: Create checkout release passport
-  uses: Muhammad-Zonain/checkout-release-passport@v0.2.0
+  uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
   with:
+    operation: check
     config_path: .checkout-evidence/staging.json
     ack_authorized: "true"
     install_browser: "true"
@@ -42,6 +48,23 @@ The Action uploads the passport, comparison and HTML report before enforcing the
 Eligible GitHub repositories can optionally apply GitHub's Sigstore-backed artifact attestation to the generated passport. This links the artifact to its repository, workflow and commit so a recipient can verify its provenance with the GitHub CLI. See [`examples/github-workflow-attested.yml`](examples/github-workflow-attested.yml). A provenance attestation still does not certify that the checkout is secure or compliant.
 
 See [`examples/github-workflow.yml`](examples/github-workflow.yml) for a complete workflow.
+
+### One-time baseline onboarding
+
+Every check intentionally requires a previously reviewed baseline. To create one without cloning this repository:
+
+1. Copy [`examples/github-baseline-workflow.yml`](examples/github-baseline-workflow.yml) into the caller repository.
+2. Run that workflow manually against a checkout you own or are explicitly authorized to inspect.
+3. Download the baseline artifact.
+4. Review `baseline.json` and every entry in `approval-template.json`.
+5. Commit the reviewed baseline at `<output_dir>/<target_id>/baseline.json`, and save the completed approvals document at the configured `approvals_file` path.
+6. Enable the regular check workflow.
+
+Never regenerate the baseline automatically before every check; doing so would erase the comparison point the gate is designed to protect.
+
+`output_dir` and `approvals_file` are resolved relative to the configuration file. Baseline creation refuses to overwrite an existing baseline unless `force_baseline: "true"` is deliberately supplied for an approved reset.
+
+Scanner-version or capture-mode changes produce `REVIEW_REQUIRED`. Existing pre-`v0.3.0` baselines should therefore be recreated and reviewed once before normal checks resume.
 
 ## Local quick start
 

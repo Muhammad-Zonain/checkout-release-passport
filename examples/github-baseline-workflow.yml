@@ -1,0 +1,25 @@
+name: Initialize checkout release baseline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reviewed-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create baseline onboarding artifact
+        uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
+        with:
+          operation: baseline
+          config_path: .checkout-evidence/staging.json
+          ack_authorized: "true"
+          install_browser: "true"
+
+      - name: Mandatory human review reminder
+        run: |
+          echo "Download the baseline artifact, review every observed script and header, complete the approval template, and commit only the reviewed files."

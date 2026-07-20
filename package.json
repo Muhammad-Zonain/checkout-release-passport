@@ -1,6 +1,6 @@
 {
   "name": "checkout-release-passport",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A local-first checkout release passport and CI gate for authorized script and security-header changes.",
   "type": "module",
   "private": true,

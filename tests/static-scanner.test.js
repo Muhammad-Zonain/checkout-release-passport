@@ -45,6 +45,7 @@ test("static scanner captures declared scripts without retaining query values or
   });
 
   assert.equal(snapshot.engine.capture_mode, "static");
+  assert.equal(snapshot.engine.version, "0.3.0");
   assert.equal(snapshot.page.title, "Test Checkout");
   assert.equal(snapshot.scripts.length, 1);
   assert.match(snapshot.scripts[0].src, /token=%3Credacted%3E/);

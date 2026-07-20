@@ -8,7 +8,7 @@ test("release passport binds decision, evidence digests, authorization, and CI p
     baseline: { snapshot_sha256: "a".repeat(64) },
     current: {
       snapshot_sha256: "b".repeat(64),
-      engine: { capture_mode: "browser" },
+      engine: { name: "checkout-evidence-engine", version: "0.3.0", capture_mode: "browser" },
       target: {
         requested_url: "https://staging.example.test/checkout",
         authorization: { confirmed: true, confirmed_by: "Owner", confirmed_at: "2026-07-19", scope_note: "Owned test checkout" },
@@ -18,7 +18,15 @@ test("release passport binds decision, evidence digests, authorization, and CI p
     comparisonPath: "/tmp/check.comparison.json",
     reportPath: "/tmp/check.html",
     reportHtml: "<html>safe report</html>",
-    env: { GITHUB_ACTIONS: "true", GITHUB_REPOSITORY: "agency/store", GITHUB_SHA: "c".repeat(40) },
+    env: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "agency/store",
+      GITHUB_SHA: "c".repeat(40),
+      CHECKOUT_PASSPORT_ACTION_REPOSITORY: "",
+      CHECKOUT_PASSPORT_ACTION_REF: "",
+      GITHUB_ACTION_REPOSITORY: "Muhammad-Zonain/checkout-release-passport",
+      GITHUB_ACTION_REF: "v0.3.0",
+    },
   });
 
   assert.equal(passport.kind, "checkout-release-passport");
@@ -27,5 +35,8 @@ test("release passport binds decision, evidence digests, authorization, and CI p
   assert.equal(passport.decision.status, "PASS");
   assert.equal(passport.authorization.reference, "TICKET-42");
   assert.equal(passport.release.repository, "agency/store");
+  assert.equal(passport.release.action_repository, "Muhammad-Zonain/checkout-release-passport");
+  assert.equal(passport.release.action_ref, "v0.3.0");
+  assert.equal(passport.generator.version, "0.3.0");
   assert.equal(passport.data_boundaries.form_values_collected, false);
 });

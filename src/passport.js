@@ -16,6 +16,8 @@ function githubProvenance(env) {
     actor: clean(env.GITHUB_ACTOR),
     run_id: clean(env.GITHUB_RUN_ID),
     run_attempt: clean(env.GITHUB_RUN_ATTEMPT),
+    action_repository: clean(env.CHECKOUT_PASSPORT_ACTION_REPOSITORY) ?? clean(env.GITHUB_ACTION_REPOSITORY),
+    action_ref: clean(env.CHECKOUT_PASSPORT_ACTION_REF) ?? clean(env.GITHUB_ACTION_REF),
   };
 }
 
@@ -48,6 +50,11 @@ export function buildReleasePassport({
       reference: clean(config.authorization.reference),
     },
     release: githubProvenance(env),
+    generator: {
+      name: current.engine.name,
+      version: current.engine.version,
+      capture_mode: current.engine.capture_mode,
+    },
     decision: {
       status: comparison.status,
       review_reasons: comparison.review_reasons,
