@@ -22,6 +22,7 @@ function externalScript(src, hash) {
 function snapshot({ scripts, csp = "default-src 'self'", origins = [] }) {
   return {
     snapshot_sha256: "a".repeat(64),
+    engine: { name: "checkout-evidence-engine", version: "0.3.0", capture_mode: "static" },
     target: { target_id: "demo" },
     page: { security_headers: { "content-security-policy": csp } },
     scripts,
@@ -90,4 +91,21 @@ test("comparison passes when evidence is unchanged and every script is approved"
   assert.equal(result.status, "PASS");
   assert.equal(result.summary.scripts_approved, 1);
   assert.deepEqual(result.review_reasons, []);
+});
+
+test("comparison requires review when scanner version or capture mode changes", () => {
+  const baseline = snapshot({
+    scripts: [externalScript("https://shop.example/a.js", "same-hash")],
+  });
+  const current = structuredClone(baseline);
+  current.snapshot_sha256 = "d".repeat(64);
+  current.engine.version = "0.4.0";
+  current.engine.capture_mode = "browser";
+
+  const result = compareSnapshots(baseline, current, approvalDocument, new Date("2026-07-18T00:00:00Z"));
+
+  assert.equal(result.status, "REVIEW_REQUIRED");
+  assert.equal(result.summary.scanner_version_changed, true);
+  assert.equal(result.summary.capture_mode_changed, true);
+  assert.deepEqual(result.review_reasons, ["scanner_version_changed", "capture_mode_changed"]);
 });

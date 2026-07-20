@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { appendFile, readFile, writeFile } from "node:fs/promises";
+import { access, appendFile, readFile, writeFile } from "node:fs/promises";
 import { buildApprovalTemplate, loadApprovals } from "./approvals.js";
 import { compareSnapshots } from "./compare.js";
 import { loadConfig } from "./config.js";
@@ -21,13 +21,14 @@ function usage() {
   return `Checkout Evidence Engine
 
 Usage:
-  checkout-evidence baseline --config <target.json> --ack-authorized [--headed]
+  checkout-evidence baseline --config <target.json> --ack-authorized [--headed] [--force-baseline]
   checkout-evidence check    --config <target.json> --ack-authorized [--headed] [--no-fail]
   checkout-evidence verify-passport --file <passport.json>
 
 Safety:
   --ack-authorized is mandatory. Use this only for a page you own or are explicitly authorized to inspect.
   The engine navigates once and passively observes resources. It does not click or submit forms.
+  Baseline creation refuses to replace an existing baseline unless --force-baseline is supplied explicitly.
 
 Exit codes for check:
   0  PASS, or --no-fail was supplied
@@ -45,6 +46,7 @@ function parseArguments(argv) {
     headed: false,
     noFail: false,
     file: null,
+    forceBaseline: false,
   };
 
   for (let index = 0; index < rest.length; index += 1) {
@@ -59,6 +61,8 @@ function parseArguments(argv) {
       options.noFail = true;
     } else if (argument === "--file") {
       options.file = rest[++index];
+    } else if (argument === "--force-baseline") {
+      options.forceBaseline = true;
     } else if (["--help", "-h"].includes(argument)) {
       options.command = "help";
     } else {
@@ -98,11 +102,20 @@ async function capture(config, options) {
 }
 
 async function runBaseline(config, options) {
+  const paths = targetPaths(config);
+  if (!options.forceBaseline) {
+    try {
+      await access(paths.baseline);
+      throw new Error("A baseline already exists. Review it instead of replacing it, or use --force-baseline only for an explicitly approved reset.");
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+
   const snapshot = await capture(config, options);
   const snapshotPath = await saveSnapshot(config, snapshot);
   const baselinePath = await setBaseline(config, snapshotPath);
   const template = buildApprovalTemplate(snapshot);
-  const paths = targetPaths(config);
   await saveJson(paths.approvalTemplate, template);
 
   console.log(`Baseline captured: ${baselinePath}`);
@@ -110,6 +123,14 @@ async function runBaseline(config, options) {
   console.log(`Approval template: ${paths.approvalTemplate}`);
   console.log(`Snapshot digest:   ${snapshot.snapshot_sha256}`);
   console.log("Next: review the approval template and copy approved entries into the configured approvals file.");
+
+  await writeBaselineGitHubOutputs({
+    config,
+    snapshot,
+    snapshotPath,
+    baselinePath,
+    approvalTemplatePath: paths.approvalTemplate,
+  });
 }
 
 async function runCheck(config, options) {
@@ -148,6 +169,7 @@ async function runCheck(config, options) {
   await writeGitHubOutputs({
     config,
     comparison,
+    snapshotPath: currentPath,
     comparisonPath,
     reportPath,
     passportPath,
@@ -163,10 +185,35 @@ function oneLine(value) {
   return String(value).replace(/[\r\n|`]/g, " ").trim();
 }
 
-async function writeGitHubOutputs({ config, comparison, comparisonPath, reportPath, passportPath, passport }) {
+async function writeBaselineGitHubOutputs({ config, snapshot, snapshotPath, baselinePath, approvalTemplatePath }) {
+  if (process.env.GITHUB_OUTPUT) {
+    const outputs = [
+      "status=BASELINE_CREATED",
+      `target_id=${config.target_id}`,
+      `snapshot_path=${snapshotPath}`,
+      `baseline_path=${baselinePath}`,
+      `approval_template_path=${approvalTemplatePath}`,
+    ];
+    await appendFile(process.env.GITHUB_OUTPUT, `${outputs.join("\n")}\n`, "utf8");
+  }
+
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const summary = `## Checkout Release Passport baseline\n\n` +
+      `| Field | Result |\n|---|---|\n` +
+      `| Target | ${oneLine(config.name)} |\n` +
+      `| Status | **BASELINE_CREATED** |\n` +
+      `| Snapshot digest | \`${snapshot.snapshot_sha256}\` |\n\n` +
+      `Review the baseline and approval template before committing them. Do not regenerate the baseline automatically on every release check.\n`;
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, summary, "utf8");
+  }
+}
+
+async function writeGitHubOutputs({ config, comparison, snapshotPath, comparisonPath, reportPath, passportPath, passport }) {
   if (process.env.GITHUB_OUTPUT) {
     const outputs = [
       `status=${comparison.status}`,
+      `target_id=${config.target_id}`,
+      `snapshot_path=${snapshotPath}`,
       `passport_id=${passport.passport_id}`,
       `passport_sha256=${passport.passport_sha256}`,
       `passport_path=${passportPath}`,

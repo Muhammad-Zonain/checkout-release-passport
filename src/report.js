@@ -107,6 +107,7 @@ export function generateHtmlReport(config, baseline, current, comparison) {
     <dl>
       <dt>Target</dt><dd>${escapeHtml(current.target.requested_url)}</dd>
       <dt>Captured</dt><dd>${escapeHtml(current.captured_at)}</dd>
+      <dt>Engine</dt><dd>${escapeHtml(current.engine.name)} ${escapeHtml(current.engine.version)}</dd>
       <dt>Capture mode</dt><dd>${escapeHtml(current.engine.capture_mode)} · ${escapeHtml(current.engine.behavior)}</dd>
       <dt>Baseline digest</dt><dd><code>${escapeHtml(baseline.snapshot_sha256)}</code></dd>
       <dt>Current digest</dt><dd><code>${escapeHtml(current.snapshot_sha256)}</code></dd>

@@ -80,8 +80,16 @@ export function compareSnapshots(baseline, current, approvalDocument, now = new 
   );
   const originChanges = compareOrigins(baseline.network_origins, current.network_origins);
   const unapprovedScripts = currentScripts.filter((script) => script.approval.status !== "approved");
+  const baselineEngineVersion = baseline.engine?.version ?? null;
+  const currentEngineVersion = current.engine?.version ?? null;
+  const baselineCaptureMode = baseline.engine?.capture_mode ?? null;
+  const currentCaptureMode = current.engine?.capture_mode ?? null;
+  const scannerVersionChanged = baselineEngineVersion !== currentEngineVersion;
+  const captureModeChanged = baselineCaptureMode !== currentCaptureMode;
 
   const reviewReasons = [];
+  if (scannerVersionChanged) reviewReasons.push("scanner_version_changed");
+  if (captureModeChanged) reviewReasons.push("capture_mode_changed");
   if (scriptChanges.added.length) reviewReasons.push("scripts_added");
   if (scriptChanges.removed.length) reviewReasons.push("scripts_removed");
   if (scriptChanges.modified.length) reviewReasons.push("scripts_modified");
@@ -106,6 +114,8 @@ export function compareSnapshots(baseline, current, approvalDocument, now = new 
       scripts_modified: scriptChanges.modified.length,
       security_headers_changed: headerChanges.length,
       network_origins_added: originChanges.added.length,
+      scanner_version_changed: scannerVersionChanged,
+      capture_mode_changed: captureModeChanged,
     },
     scripts: {
       current: currentScripts,
@@ -120,6 +130,18 @@ export function compareSnapshots(baseline, current, approvalDocument, now = new 
     network_origins: {
       current: current.network_origins,
       ...originChanges,
+    },
+    engine: {
+      baseline: {
+        version: baselineEngineVersion,
+        capture_mode: baselineCaptureMode,
+      },
+      current: {
+        version: currentEngineVersion,
+        capture_mode: currentCaptureMode,
+      },
+      scanner_version_changed: scannerVersionChanged,
+      capture_mode_changed: captureModeChanged,
     },
   };
 }

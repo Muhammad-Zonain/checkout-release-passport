@@ -1,6 +1,7 @@
 import { parse } from "parse5";
 import { digestObject, sha256 } from "./hash.js";
 import { getOrigin, sanitizeUrl, selectSecurityHeaders } from "./privacy.js";
+import { ENGINE_VERSION } from "./version.js";
 
 function isHttpOrigin(origin) {
   return origin.startsWith("http://") || origin.startsWith("https://");
@@ -156,7 +157,7 @@ async function scanWithBrowser(config, options = {}) {
       schema_version: "1.0",
       engine: {
         name: "checkout-evidence-engine",
-        version: "0.1.0",
+        version: ENGINE_VERSION,
         capture_mode: "browser",
         behavior: "GET navigation and passive resource observation only",
       },
@@ -409,7 +410,7 @@ async function scanWithStaticFetch(config) {
     schema_version: "1.0",
     engine: {
       name: "checkout-evidence-engine",
-      version: "0.1.0",
+      version: ENGINE_VERSION,
       capture_mode: "static",
       behavior: "Authorized HTML GET plus passive GETs for script elements declared in that HTML; no JavaScript execution",
     },
