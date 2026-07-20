@@ -5,6 +5,12 @@
 [![Latest release](https://img.shields.io/github/v/release/Muhammad-Zonain/checkout-release-passport)](https://github.com/Muhammad-Zonain/checkout-release-passport/releases/latest)
 [![License](https://img.shields.io/github/license/Muhammad-Zonain/checkout-release-passport)](LICENSE)
 
+GitHub-native checkout release evidence for safer ecommerce deployments.
+
+[Product Website](https://muhammad-zonain.github.io/checkout-release-passport-consumer-proof/) ·
+[GitHub Marketplace](https://github.com/marketplace/actions/checkout-release-passport) ·
+[Independent Consumer Proof](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
+
 > A local-first checkout release evidence gate for ecommerce agencies.
 
 Software bills of materials describe code and packages. They do not necessarily record what a browser actually received at checkout, which security-impacting headers changed, who approved the change, or whether a release should stop.
