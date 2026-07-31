@@ -9,7 +9,7 @@ GitHub-native checkout release evidence for safer ecommerce deployments.
 
 [Product Website](https://muhammad-zonain.github.io/checkout-release-passport-consumer-proof/) ·
 [GitHub Marketplace](https://github.com/marketplace/actions/checkout-release-passport) ·
-[Independent Consumer Proof](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
+[Separate-Repository Static Demo](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
 
 > A local-first checkout release evidence gate for ecommerce agencies.
 
