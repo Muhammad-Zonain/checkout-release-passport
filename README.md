@@ -9,7 +9,7 @@
 
 [Product Website](https://muhammad-zonain.github.io/checkout-release-passport-consumer-proof/) ·
 [GitHub Marketplace](https://github.com/marketplace/actions/checkout-release-passport) ·
-[Separate-Repository Installation Proof — Static Demo](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
+[Separate-Repository Browser Acceptance Demo](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
 
 > A local-first checkout release evidence gate for ecommerce agencies and merchant-controlled checkout teams.
 
@@ -61,14 +61,28 @@ It is not:
 
 The tool never authorizes itself. The operator must own the target or hold explicit written authorization.
 
-````markdown
 ## GitHub Action quick start
 
 Add an authorized target configuration to the caller repository.
 
 ### Convenient versioned reference
 
-This form is easy to read and follows the published `v0.3.0` release:
+This readable reference follows the published `v0.3.0` release:
+
+```yaml
+- name: Create checkout release passport
+  uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
+  with:
+    operation: check
+    config_path: .checkout-evidence/staging.json
+    ack_authorized: "true"
+    install_browser: "true"
+    fail_on_review: "true"
+```
+
+### Immutable production pinning
+
+Security-conscious teams can pin the same `v0.3.0` release to its full commit SHA:
 
 ```yaml
 - name: Create checkout release passport
@@ -81,7 +95,15 @@ This form is easy to read and follows the published `v0.3.0` release:
     fail_on_review: "true"
 ```
 
-The Action uploads the generated evidence before enforcing a `REVIEW_REQUIRED` gate. This preserves the evidence even when the workflow job subsequently fails.
+A full commit SHA prevents the selected Checkout Release Passport revision from changing without an explicit workflow update.
+
+The published `v0.3.0` release supports immutable caller pinning to its full commit SHA.
+
+The planned `v0.3.1` release additionally pins the nested artifact-upload dependency to a reviewed full commit SHA.
+
+Until `v0.3.1` is published, do not describe `v0.3.0` as fully compatible with policies requiring every nested third-party Action dependency to be pinned to a full SHA.
+
+The Action uploads generated evidence before enforcing a `REVIEW_REQUIRED` gate. This preserves the evidence even when the workflow job subsequently fails.
 
 See [`examples/github-workflow.yml`](examples/github-workflow.yml) for a complete check workflow.
 
@@ -106,7 +128,6 @@ To create the initial baseline from a caller repository:
 8. Save the completed approvals file at the configured `approvals_file` path.
 9. Enable the normal check workflow.
 
-````markdown
 Example baseline Action step using immutable production pinning:
 
 ```yaml
@@ -280,6 +301,18 @@ The tool must not be used to:
 
 See [`docs/SECURITY_AND_SCOPE.md`](docs/SECURITY_AND_SCOPE.md) for the complete security and scope rules.
 
+## Data flow and telemetry
+
+Checkout Release Passport has no maintainer-operated account, analytics endpoint, or telemetry callback.
+
+It navigates to the configured authorized target and to resources that the page normally requests during the configured observation.
+
+Generated evidence remains in the caller's local workspace or GitHub Actions workspace and artifacts unless the caller deliberately copies or exports it.
+
+The Action does not send collected checkout evidence to the maintainer.
+
+Third-party resources loaded by the configured checkout remain subject to the checkout operator's own architecture, providers, policies, and authorization.
+
 ## GitHub artifact provenance
 
 Eligible GitHub repositories may optionally apply GitHub's Sigstore-backed artifact attestation to a generated passport.
@@ -290,23 +323,32 @@ See:
 
 Artifact provenance can help connect an artifact with its repository, workflow, and commit. It does not certify that the observed checkout is secure or compliant.
 
-## Separate-repository static demo
+## Separate-repository browser acceptance demo
 
-The following repository demonstrates that the released public Action can be called from a separate GitHub repository in static capture mode:
+The following creator-maintained repository demonstrates that the released public Action can be called from a separate GitHub repository in browser capture mode:
 
-[Separate-Repository Installation Proof — Static Demo](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
+[Separate-Repository Browser Acceptance Demo](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
+
+The browser acceptance sequence demonstrates:
+
+```text
+Unchanged checkout          → PASS
+Controlled script change    → REVIEW_REQUIRED
+Rollback                    → PASS
+```
 
 That repository is maintained by the creator of Checkout Release Passport.
 
-It demonstrates cross-repository installation and a static-mode fixture acceptance sequence. It is not:
+It demonstrates cross-repository installation and a browser-mode fixture acceptance sequence.
+
+It is not:
 
 - an independent audit;
 - external customer validation;
 - certification;
 - a third-party endorsement;
-- a browser-mode acceptance demo.
-
-The repository must not be described as a browser acceptance demo until a browser-mode workflow has completed successfully.
+- PCI DSS certification;
+- a replacement for continuous production monitoring.
 
 ## Why this is different
 
@@ -329,6 +371,8 @@ Paid implementation services, when requested, cover configuration, baseline revi
 ## Documentation and examples
 
 - [`docs/SECURITY_AND_SCOPE.md`](docs/SECURITY_AND_SCOPE.md)
+- [`SECURITY.md`](SECURITY.md)
+- [`SUPPORT.md`](SUPPORT.md)
 - [`examples/github-workflow.yml`](examples/github-workflow.yml)
 - [`examples/github-baseline-workflow.yml`](examples/github-baseline-workflow.yml)
 - [`examples/github-workflow-attested.yml`](examples/github-workflow-attested.yml)
@@ -337,17 +381,19 @@ Paid implementation services, when requested, cover configuration, baseline revi
 
 ## Support and private fit checks
 
-For public product questions, bug reports, or documentation feedback, use this repository's Issues tab.
+For public non-sensitive product questions, reproducible bugs, and documentation feedback, use this repository's Issues tab.
 
-For a private fit check:
+For a private checkout-evidence fit check or installation enquiry, email:
+
+[hello@transferverity.com](mailto:hello@transferverity.com?subject=Private%20Checkout%20Evidence%20Fit%20Check)
+
+For suspected vulnerabilities, do not open a public issue. Follow [`SECURITY.md`](SECURITY.md) and use the subject:
 
 ```text
-hello@transferverity.com
+[SECURITY] Checkout Release Passport
 ```
 
-Send only non-sensitive architecture details.
-
-Do not send credentials, secrets, private URLs, customer data, card data, cookies, or private repository content.
+Never send credentials, tokens, secrets, private URLs, customer data, card data, cookies, or private repository content.
 
 ## Maintainer
 
@@ -356,6 +402,8 @@ Do not send credentials, secrets, private URLs, customer data, card data, cookie
 MSc Computer Systems Engineering
 
 GitHub: [@Muhammad-Zonain](https://github.com/Muhammad-Zonain)
+
+LinkedIn: [Muhammad Zonain](https://www.linkedin.com/in/muhammad-zonain-4ab27558/)
 
 Product website:
 

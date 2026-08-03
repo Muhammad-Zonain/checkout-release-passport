@@ -2,6 +2,16 @@
 
 All notable changes to Checkout Release Passport are documented here.
 
+## v0.3.1
+
+### Security hardening
+
+- Pinned the nested `actions/upload-artifact` dependency to the reviewed
+  full commit SHA for `v7.0.1`.
+- Documented immutable caller pinning and nested dependency boundaries.
+- Preserved all existing inputs, outputs, evidence formats, and workflow
+  behavior.
+
 ## 0.3.0 - 2026-07-20
 
 ### Added
