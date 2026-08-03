@@ -11,10 +11,12 @@ jobs:
   checkout-release-passport:
     if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v6
+
       - name: Create pre-release checkout evidence
-        uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
+        uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.0
         with:
           operation: check
           config_path: .checkout-evidence/staging.json
