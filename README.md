@@ -86,7 +86,7 @@ Security-conscious teams can pin the same `v0.3.1` release to its full commit SH
 
 ```yaml
 - name: Create checkout release passport
-  uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.1
+  uses: Muhammad-Zonain/checkout-release-passport@4cf7cf45a39bbdca6891be60b96a7590a8d61d31 # v0.3.1
   with:
     operation: check
     config_path: .checkout-evidence/staging.json
@@ -97,15 +97,10 @@ Security-conscious teams can pin the same `v0.3.1` release to its full commit SH
 
 A full commit SHA prevents the selected Checkout Release Passport revision from changing without an explicit workflow update.
 
-The published `v0.3.1` release supports immutable caller pinning to its full commit SHA.
-
-The planned `v0.3.1` release additionally pins the nested artifact-upload dependency to a reviewed full commit SHA.
-
-Until `v0.3.1` is published, do not describe `v0.3.1` as fully compatible with policies requiring every nested third-party Action dependency to be pinned to a full SHA.
-
 The Action uploads generated evidence before enforcing a `REVIEW_REQUIRED` gate. This preserves the evidence even when the workflow job subsequently fails.
 
-See [`examples/github-workflow.yml`](examples/github-workflow.yml) for a complete check workflow.
+The published `v0.3.1` release supports immutable caller pinning and pins
+its nested artifact-upload dependency to a reviewed full commit SHA.
 
 ## One-time baseline onboarding
 
@@ -132,7 +127,7 @@ Example baseline Action step using immutable production pinning:
 
 ```yaml
 - name: Create baseline onboarding artifact
-  uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.0
+  uses: Muhammad-Zonain/checkout-release-passport@4cf7cf45a39bbdca6891be60b96a7590a8d61d31 # v0.3.1
   with:
     operation: baseline
     config_path: .checkout-evidence/staging.json
