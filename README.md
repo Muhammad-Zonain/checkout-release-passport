@@ -67,11 +67,11 @@ Add an authorized target configuration to the caller repository.
 
 ### Convenient versioned reference
 
-This readable reference follows the published `v0.3.0` release:
+This readable reference follows the published `v0.3.1` release:
 
 ```yaml
 - name: Create checkout release passport
-  uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
+  uses: Muhammad-Zonain/checkout-release-passport@v0.3.1
   with:
     operation: check
     config_path: .checkout-evidence/staging.json
@@ -82,11 +82,11 @@ This readable reference follows the published `v0.3.0` release:
 
 ### Immutable production pinning
 
-Security-conscious teams can pin the same `v0.3.0` release to its full commit SHA:
+Security-conscious teams can pin the same `v0.3.1` release to its full commit SHA:
 
 ```yaml
 - name: Create checkout release passport
-  uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.0
+  uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.1
   with:
     operation: check
     config_path: .checkout-evidence/staging.json
@@ -97,11 +97,11 @@ Security-conscious teams can pin the same `v0.3.0` release to its full commit SH
 
 A full commit SHA prevents the selected Checkout Release Passport revision from changing without an explicit workflow update.
 
-The published `v0.3.0` release supports immutable caller pinning to its full commit SHA.
+The published `v0.3.1` release supports immutable caller pinning to its full commit SHA.
 
 The planned `v0.3.1` release additionally pins the nested artifact-upload dependency to a reviewed full commit SHA.
 
-Until `v0.3.1` is published, do not describe `v0.3.0` as fully compatible with policies requiring every nested third-party Action dependency to be pinned to a full SHA.
+Until `v0.3.1` is published, do not describe `v0.3.1` as fully compatible with policies requiring every nested third-party Action dependency to be pinned to a full SHA.
 
 The Action uploads generated evidence before enforcing a `REVIEW_REQUIRED` gate. This preserves the evidence even when the workflow job subsequently fails.
 
