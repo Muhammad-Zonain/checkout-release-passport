@@ -127,7 +127,7 @@ runs:
 
     - name: Upload baseline onboarding evidence
       if: ${{ inputs.operation == 'baseline' }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: checkout-release-passport-${{ steps.scan.outputs.target_id }}-baseline-${{ github.job }}-${{ inputs.artifact_suffix }}-${{ github.run_id }}-${{ github.run_attempt }}
         if-no-files-found: error
@@ -139,7 +139,7 @@ runs:
 
     - name: Upload client-owned release evidence
       if: ${{ inputs.operation == 'check' }}
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: checkout-release-passport-${{ steps.scan.outputs.target_id }}-check-${{ github.job }}-${{ inputs.artifact_suffix }}-${{ github.run_id }}-${{ github.run_attempt }}
         if-no-files-found: error
