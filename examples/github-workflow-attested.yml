@@ -11,12 +11,13 @@ permissions:
 jobs:
   checkout-release-passport:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v6
 
       - name: Create checkout release passport
         id: passport
-        uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
+        uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.0
         with:
           operation: check
           config_path: .checkout-evidence/staging.json
