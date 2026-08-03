@@ -24,3 +24,19 @@ The engine stores script hashes and metadata. URL query values are redacted. Scr
 ## Product claim
 
 Reports must say that the product supports evidence collection. They must not claim to certify PCI DSS compliance or guarantee security. Formal applicability and compliance decisions remain with the merchant and its qualified assessor.
+
+## Data flow and telemetry
+
+Checkout Release Passport has no maintainer-operated account, analytics
+endpoint, or telemetry callback.
+
+It navigates to the configured authorized target and to resources that the
+page normally requests during the configured observation.
+
+Generated evidence remains in the caller's local workspace or GitHub Actions
+workspace and artifacts unless the caller deliberately copies or exports it.
+
+The Action does not send collected checkout evidence to the maintainer.
+
+Third-party resources loaded by the configured checkout remain subject to the
+checkout operator's own architecture, providers, policies, and authorization.
