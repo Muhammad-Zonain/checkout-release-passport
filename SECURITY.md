@@ -4,7 +4,7 @@
 
 Only the latest published release is supported.
 
-Current supported release: `v0.3.0`.
+Current supported release: `v0.3.1`.
 
 ## Report a vulnerability privately
 
