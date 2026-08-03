@@ -61,13 +61,18 @@ It is not:
 
 The tool never authorizes itself. The operator must own the target or hold explicit written authorization.
 
+````markdown
 ## GitHub Action quick start
 
-Add an authorized target configuration to the caller repository, then use:
+Add an authorized target configuration to the caller repository.
+
+### Convenient versioned reference
+
+This form is easy to read and follows the published `v0.3.0` release:
 
 ```yaml
 - name: Create checkout release passport
-  uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
+  uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.0
   with:
     operation: check
     config_path: .checkout-evidence/staging.json
@@ -101,11 +106,12 @@ To create the initial baseline from a caller repository:
 8. Save the completed approvals file at the configured `approvals_file` path.
 9. Enable the normal check workflow.
 
-Example baseline Action step:
+````markdown
+Example baseline Action step using immutable production pinning:
 
 ```yaml
 - name: Create baseline onboarding artifact
-  uses: Muhammad-Zonain/checkout-release-passport@v0.3.0
+  uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.0
   with:
     operation: baseline
     config_path: .checkout-evidence/staging.json
