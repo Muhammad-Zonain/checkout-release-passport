@@ -7,7 +7,7 @@
 
 **GitHub-native checkout release evidence for safer ecommerce deployments.**
 
-[Product Website](https://muhammad-zonain.github.io/checkout-release-passport-consumer-proof/) ·
+[Product Website](https://checkout.transferverity.com)·
 [GitHub Marketplace](https://github.com/marketplace/actions/checkout-release-passport) ·
 [Separate-Repository Browser Acceptance Demo](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
 
@@ -402,7 +402,7 @@ LinkedIn: [Muhammad Zonain](https://www.linkedin.com/in/muhammad-zonain-4ab27558
 
 Product website:
 
-[https://muhammad-zonain.github.io/checkout-release-passport-consumer-proof/](https://muhammad-zonain.github.io/checkout-release-passport-consumer-proof/)
+(https://checkout.transferverity.com).
 
 ## License
 
