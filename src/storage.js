@@ -13,6 +13,8 @@ export function targetPaths(config) {
     scans: path.join(root, "scans"),
     reports: path.join(root, "reports"),
     passports: path.join(root, "passports"),
+    events: path.join(root, "events"),
+    alerts: path.join(root, "alerts"),
     approvalTemplate: path.join(root, "approval-template.json"),
   };
 }
@@ -23,8 +25,26 @@ export async function ensureTargetDirectories(config) {
     mkdir(paths.scans, { recursive: true }),
     mkdir(paths.reports, { recursive: true }),
     mkdir(paths.passports, { recursive: true }),
+    mkdir(paths.events, { recursive: true }),
+    mkdir(paths.alerts, { recursive: true }),
   ]);
   return paths;
+}
+
+export async function saveMonitoringEvent(config, capturedAt, snapshotHash, event) {
+  const paths = await ensureTargetDirectories(config);
+  const filename = `${compactTimestamp(capturedAt)}-${snapshotHash.slice(0, 12)}.event.json`;
+  const eventPath = path.join(paths.events, filename);
+  await writeFile(eventPath, `${JSON.stringify(event, null, 2)}\n`, "utf8");
+  return eventPath;
+}
+
+export async function saveReviewAlert(config, capturedAt, snapshotHash, alert) {
+  const paths = await ensureTargetDirectories(config);
+  const filename = `${compactTimestamp(capturedAt)}-${snapshotHash.slice(0, 12)}.alert.json`;
+  const alertPath = path.join(paths.alerts, filename);
+  await writeFile(alertPath, `${JSON.stringify(alert, null, 2)}\n`, "utf8");
+  return alertPath;
 }
 
 export async function savePassport(config, capturedAt, snapshotHash, passport) {

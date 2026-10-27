@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TransferVerity — Practice Checkout</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#edf2f4;color:#172b35;font:17px/1.55 system-ui,sans-serif}main{max-width:850px;margin:42px auto;padding:28px}header{margin-bottom:24px}.label{font-size:13px;font-weight:700;color:#356475;letter-spacing:.08em}h1{font-size:36px;line-height:1.15;margin:12px 0}h2{font-size:24px;margin:0 0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{background:#fff;padding:26px;border:1px solid #d0dce0;border-radius:14px}.muted{color:#526975}.price{font-size:30px;font-weight:750}button{padding:12px 16px;border:0;border-radius:7px;background:#116879;color:#fff;font:600 16px system-ui;cursor:pointer}button.secondary{background:#e2edef;color:#174d5a}button:focus-visible,a:focus-visible{outline:3px solid #df811c;outline-offset:3px}button:disabled{opacity:.5;cursor:default}.row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid #e5ecee}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}.notice{border-left:4px solid #bd7014;background:#fff8ec;padding:14px 18px;margin-top:24px}.success{background:#e3f6e9;padding:16px;border-radius:8px}a{color:#116879}footer{margin-top:24px;font-size:14px} [hidden]{display:none!important}@media(max-width:620px){main{margin:0;padding:22px}.grid{grid-template-columns:1fr}h1{font-size:30px}}
+  </style>
+</head>
+<body>
+<main id="practice-ready">
+  <header><div class="label">TRANSFERVERITY / OWNED PRACTICE FIXTURE</div><h1>Test a checkout. See why it fails.</h1><p class="muted">Synthetic products only. No account, card details or real payment.</p></header>
+  <section id="shop" class="grid">
+    <article class="card"><h2>Practice notebook</h2><p>A simple product for learning browser tests.</p><p class="price">$10.00</p><button id="add-item" type="button">Add notebook</button></article>
+    <aside class="card"><h2>Your cart</h2><div class="row"><span>Notebooks</span><strong id="cart-count" aria-live="polite">0</strong></div><p class="muted">Add two notebooks, then open checkout.</p><button id="open-checkout" type="button" disabled>Open checkout</button></aside>
+  </section>
+  <section id="checkout" class="card" hidden>
+    <h2>Checkout summary</h2><div class="row"><span>Quantity</span><strong id="quantity">0</strong></div><div class="row"><span>Unit price</span><strong>$10.00</strong></div><div class="row"><span>Shipping</span><strong>$0.00</strong></div><div class="row"><strong>Total</strong><strong id="total">$0.00</strong></div><div class="actions"><button id="place-order" type="button">Create demo order</button><button class="secondary" id="back" type="button">Back to cart</button></div>
+  </section>
+  <section id="confirmation" class="success" role="status" hidden><h2>Demo order created</h2><p id="order-id">DEMO-ORDER-001</p><p>No payment was made and no real order was submitted.</p></section>
+  <div class="notice"><strong>Exercise:</strong> 2 × $10.00 should equal $20.00. In the broken fixture, the same checkout displays $19.00. The functional test must catch that mistake.</div>
+  <footer><a href="?fault=none">Normal fixture</a> · <a href="?fault=total">Broken total fixture</a><p>Creator-maintained training demo. This is not customer evidence or payment-provider integration.</p></footer>
+</main>
+<script>
+  // Only a controlled synthetic fault; no user input or remote data is used.
+  const brokenTotal = new URLSearchParams(location.search).get('fault') === 'total';
+  let count = 0;
+  const byId = (id) => document.getElementById(id);
+  byId('add-item').addEventListener('click', () => { count += 1; byId('cart-count').textContent = String(count); byId('open-checkout').disabled = false; });
+  byId('open-checkout').addEventListener('click', () => {
+    byId('quantity').textContent = String(count);
+    byId('total').textContent = '$' + (count * 10 - (brokenTotal ? 1 : 0)).toFixed(2);
+    byId('shop').hidden = true; byId('checkout').hidden = false;
+  });
+  byId('back').addEventListener('click', () => { byId('shop').hidden = false; byId('checkout').hidden = true; });
+  byId('place-order').addEventListener('click', () => { byId('checkout').hidden = true; byId('confirmation').hidden = false; });
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkout.transferverity.com/schemas/monitoring-event.schema.json",
+  "title": "Checkout Monitoring Event",
+  "type": "object",
+  "required": ["schema_version", "kind", "event_id", "event_sha256", "created_at", "target", "decision", "control_coverage", "evidence"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "kind": { "const": "checkout-monitoring-event" },
+    "event_id": { "type": "string", "pattern": "^cme_[a-f0-9]{20}$" },
+    "event_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "target": { "type": "object" },
+    "decision": {
+      "type": "object",
+      "required": ["status", "review_priority", "review_reasons", "findings"]
+    },
+    "control_coverage": { "type": "object" },
+    "evidence": { "type": "object" }
+  },
+  "additionalProperties": false
+}

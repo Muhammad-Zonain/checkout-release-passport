@@ -4,7 +4,7 @@
 
 Only the latest published release is supported.
 
-Current supported release: `v0.3.1`.
+Unreleased branches, pull requests, and release candidates are provided for review and testing, not as supported releases. Use the [latest published GitHub release](https://github.com/Muhammad-Zonain/checkout-release-passport/releases/latest) and pin its reviewed full commit SHA in production.
 
 ## Report a vulnerability privately
 

@@ -4,16 +4,26 @@
   "url": "http://127.0.0.1:4173/checkout.html",
   "output_dir": "../evidence",
   "approvals_file": "demo-approvals.json",
+  "capture_expectations": {
+    "expected_final_url": "http://127.0.0.1:4173/checkout.html",
+    "ready_element_id": "status"
+  },
   "authorization": {
     "confirmed": true,
     "confirmed_by": "Local Demo Operator",
     "confirmed_at": "2026-07-18",
-    "scope_note": "Locally hosted demonstration page owned and controlled by the operator"
+    "scope_note": "Locally hosted demonstration page owned and controlled by the operator",
+    "allowed_navigation_origins": ["http://127.0.0.1:4173"]
   },
   "scan": {
     "mode": "static",
     "wait_until": "networkidle",
     "timeout_ms": 30000,
     "post_load_wait_ms": 500
+  },
+  "monitoring": {
+    "expected_interval_hours": 24,
+    "review_owner": "Demo Ecommerce Engineering",
+    "response_target_hours": 4
   }
 }

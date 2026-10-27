@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkout.transferverity.com/schemas/approvals.schema.json",
+  "title": "Checkout Script Approval Register",
+  "type": "object",
+  "required": ["schema_version", "target_id", "approvals"],
+  "properties": {
+    "schema_version": { "enum": ["1.0", "1.1"] },
+    "target_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{1,63}$" },
+    "approvals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["approval_id", "kind", "match_type", "match", "owner", "purpose", "approved_by", "approved_at"],
+        "properties": {
+          "approval_id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["external", "inline"] },
+          "match_type": { "enum": ["exact", "prefix"] },
+          "match": { "type": "string", "minLength": 1 },
+          "owner": { "type": "string", "minLength": 1 },
+          "purpose": { "type": "string", "minLength": 8 },
+          "approved_by": { "type": "string", "minLength": 1 },
+          "approved_at": { "type": "string", "format": "date" },
+          "expires_at": { "type": ["string", "null"], "format": "date" },
+          "integrity_method": { "enum": ["observed-sha256", "sri", "csp", "vendor-attestation", "other"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

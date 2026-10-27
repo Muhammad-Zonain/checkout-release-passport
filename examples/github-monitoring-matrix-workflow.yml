@@ -1,0 +1,45 @@
+name: Multi-checkout control monitoring
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  monitor:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: merchant-a
+            config: .checkout-evidence/merchant-a.json
+          - target: merchant-b
+            config: .checkout-evidence/merchant-b.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: checkout-control-${{ matrix.target }}
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Monitor ${{ matrix.target }}
+        # For production, replace v0.4.1 with the reviewed release's full commit SHA.
+        uses: Muhammad-Zonain/checkout-release-passport@v0.4.1
+        with:
+          operation: check
+          config_path: ${{ matrix.config }}
+          ack_authorized: "true"
+          install_browser: "true"
+          fail_on_review: "true"
+          alert_mode: github-issue
+          github_token: ${{ github.token }}
+          retention_days: "90"
+          artifact_suffix: ${{ matrix.target }}

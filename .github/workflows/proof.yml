@@ -12,22 +12,43 @@ permissions:
 jobs:
   tests-and-passport:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
-          cache: npm
+          package-manager-cache: false
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Run safety and integrity tests
         run: npm test
 
-      - name: Run local baseline, overwrite-guard, and passport proof
-        run: npm run verify:passport
+      - name: Install the pinned browser for actual browser verification
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Reject wrong-page, HTTP-error, hidden-marker and timed-out browser captures
+        run: npm run test:browser
+
+      - name: Prove functional healthy, broken-total and recovery cases
+        run: npm run practice:proof
+
+      - name: Preserve functional practice results, including failures
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: owned-functional-practice
+          path: evidence/functional-practice/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Run local PASS, P1 review, and recovery proof
+        run: npm run verify:monitoring
 
       - name: Start owned checkout fixture
         run: |
@@ -50,7 +71,7 @@ jobs:
           ack_authorized: "true"
           install_browser: "false"
 
-      - name: Prove the local Action produces a PASS passport
+      - name: Prove the local Action produces a PASS operational evidence set
         id: passport
         uses: ./
         with:
@@ -59,6 +80,11 @@ jobs:
           ack_authorized: "true"
           install_browser: "false"
           fail_on_review: "true"
+          retention_days: "90"
 
-      - name: Verify the generated passport digest
-        run: node src/cli.js verify-passport --file "${{ steps.passport.outputs.passport_path }}"
+      - name: Verify the generated passport, event, and alert digests
+        run: |
+          test "${{ steps.passport.outputs.review_priority }}" = "NONE"
+          node src/cli.js verify-passport --file "${{ steps.passport.outputs.passport_path }}"
+          node src/cli.js verify-event --file "${{ steps.passport.outputs.monitoring_event_path }}"
+          node src/cli.js verify-alert --file "${{ steps.passport.outputs.alert_path }}"

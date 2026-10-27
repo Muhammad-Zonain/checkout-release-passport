@@ -9,11 +9,15 @@ Use GitHub Issues for:
 - documentation corrections;
 - feature requests that do not disclose private architecture.
 
-## Private enquiries
+## Partner integration enquiries
 
-For private fit checks and installation enquiries, email:
+For a payment-page security vendor integration discussion, email:
 
 `hello@transferverity.com`
+
+Subject:
+
+`Vendor GitHub Evidence Integration`
 
 ## Security reports
 
@@ -29,10 +33,12 @@ Subject:
 
 ## Support scope
 
-The open-source GitHub Action is supported on a best-effort basis.
+The open-source GitHub Action is supported on a best-effort basis for the latest published release.
 
-Paid installation, acceptance testing, handover, and support are governed by
-the written scope agreed with the customer.
+Any paid partner adapter, configuration, acceptance testing, handover, or
+referred-customer installation is governed by a separate written scope and
+acceptance record. No third-party adapter, vendor endorsement, customer
+deployment, or certification is implied by the public repository.
 
 Never post credentials, tokens, card data, cookies, customer information,
 private repository content, secrets, or private checkout URLs in a public issue.
