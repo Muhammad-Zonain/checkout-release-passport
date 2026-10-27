@@ -1,0 +1,92 @@
+name: Release integrity
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+jobs:
+  verify-and-attest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the released tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Verify tag and package versions match
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          node --input-type=module -e '
+            import pkg from "./package.json" with { type: "json" };
+            if (process.env.RELEASE_TAG !== `v${pkg.version}`) {
+              throw new Error(`Release tag ${process.env.RELEASE_TAG} does not match package version v${pkg.version}`);
+            }
+          '
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run safety and integrity tests
+        run: node --test
+
+      - name: Install pinned Chromium and verify actual browser behavior
+        run: |
+          npx --no-install playwright install --with-deps chromium
+          npm run test:browser
+          npm run practice:proof
+
+      - name: Run local PASS, review, and recovery proof
+        run: bash scripts/verify-passport-demo.sh
+
+      - name: Build source archive, SBOM, and checksums
+        id: release_files
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          mkdir -p dist
+          version="${RELEASE_TAG#v}"
+          archive="dist/checkout-release-passport-${version}.tar.gz"
+          sbom="dist/checkout-release-passport-${version}.spdx.json"
+          git archive --format=tar.gz --prefix="checkout-release-passport-${version}/" --output="$archive" HEAD
+          npm sbom --sbom-format=spdx > "$sbom"
+          sha256sum dist/checkout-release-passport-* > dist/SHA256SUMS
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+          echo "sbom=$sbom" >> "$GITHUB_OUTPUT"
+
+      - name: Attest source provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ steps.release_files.outputs.archive }}
+
+      - name: Attest source SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ steps.release_files.outputs.archive }}
+          sbom-path: ${{ steps.release_files.outputs.sbom }}
+
+      - name: Upload release-integrity files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-integrity-${{ github.event.release.tag_name }}
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            dist/checkout-release-passport-*.tar.gz
+            dist/checkout-release-passport-*.spdx.json
+            dist/SHA256SUMS
