@@ -64,7 +64,14 @@ test("redacted URL hashes do not depend on query values", async (context) => {
     const url = new URL(request.url, "http://127.0.0.1");
     if (url.pathname === "/checkout") {
       response.writeHead(200, { "content-type": "text/html" });
-      response.end(`<!doctype html><script src="/sdk.js?token=${url.searchParams.get("token")}"></script>`);
+      // Serve only fixed test fixtures; never reflect request data into HTML.
+      if (url.searchParams.get("token") === "first-secret") {
+        response.end('<!doctype html><script src="/sdk.js?token=first-secret"></script>');
+      } else if (url.searchParams.get("token") === "second-secret") {
+        response.end('<!doctype html><script src="/sdk.js?token=second-secret"></script>');
+      } else {
+        response.writeHead(400).end("Unsupported test token");
+      }
       return;
     }
     if (url.pathname === "/sdk.js") {
