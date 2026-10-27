@@ -1,5 +1,7 @@
 # Days 1–7: evidence-engine execution plan
 
+> Historical note: this file records the original evidence-engine prototype plan. It is retained for development history and is not the current commercial, partner, pricing, or outreach plan. The current scope is [`PARTNER_INTEGRATION_PILOT.md`](PARTNER_INTEGRATION_PILOT.md).
+
 ## End-of-week outcome
 
 By the end of day 7, the engine must prove this exact sequence:

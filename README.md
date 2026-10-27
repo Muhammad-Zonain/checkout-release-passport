@@ -1,77 +1,122 @@
 # Checkout Release Passport
 
 [![Product proof](https://github.com/Muhammad-Zonain/checkout-release-passport/actions/workflows/proof.yml/badge.svg)](https://github.com/Muhammad-Zonain/checkout-release-passport/actions/workflows/proof.yml)
+[![CodeQL](https://github.com/Muhammad-Zonain/checkout-release-passport/actions/workflows/codeql.yml/badge.svg)](https://github.com/Muhammad-Zonain/checkout-release-passport/actions/workflows/codeql.yml)
 [![GitHub Marketplace](https://img.shields.io/badge/GitHub%20Marketplace-Checkout%20Release%20Passport-2ea44f?logo=github)](https://github.com/marketplace/actions/checkout-release-passport)
 [![Latest release](https://img.shields.io/github/v/release/Muhammad-Zonain/checkout-release-passport)](https://github.com/Muhammad-Zonain/checkout-release-passport/releases/latest)
 [![License](https://img.shields.io/github/license/Muhammad-Zonain/checkout-release-passport)](LICENSE)
 
-**GitHub-native checkout release evidence for safer ecommerce deployments.**
+**Repository-owned script/header evidence for an authorised checkout, with explicit page-readiness checks and a separate functional practice example.**
 
-[Product Website](https://checkout.transferverity.com)·
+[Product website](https://checkout.transferverity.com) ·
 [GitHub Marketplace](https://github.com/marketplace/actions/checkout-release-passport) ·
-[Separate-Repository Browser Acceptance Demo](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
+[Creator-maintained consumer proof](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof) ·
+[Start here: update and practice](docs/START_HERE.md)
 
-> A local-first checkout release evidence gate for ecommerce agencies and merchant-controlled checkout teams.
+## Release status and scope
 
-Software bills of materials and source-code diffs describe code and package changes. They do not necessarily record what a browser actually received at checkout, which selected security-impacting headers changed, who reviewed the change, or whether a release requires human attention.
+This branch prepares **v0.4.1; it is not yet a published release**. It adds operational evidence, privacy hardening and capture-readiness checks. The latest public release verified on 27 September 2026 was v0.3.1. Publish v0.4.1 only after the candidate's required CI and separate-repository browser proof pass.
 
-Checkout Release Passport creates a per-release evidence record for a checkout that the operator owns or is explicitly authorized to inspect.
+The Action itself captures script/header evidence; it does not click through a cart or make payments. The separate owned practice fixture demonstrates a functional test: add two notebooks, verify a $20 total, and create a synthetic confirmation. Its deliberately broken $19 total must fail the same test. It is training evidence, not a customer checkout integration.
 
-## What the product does
+**No third-party vendor adapter, vendor endorsement, customer deployment, PCI certification, or independent validation is currently claimed.** A vendor-specific adapter will be built only with the vendor's written participation, official interface documentation, authorized sandbox or durable export, fixed acceptance criteria, and a commercial path.
 
-Checkout Release Passport can:
+The Action observes an explicitly authorized checkout, compares the result with a reviewed baseline, and retains redacted release evidence inside the caller's GitHub workflow. Vendor integration remains an optional, unvalidated commercial hypothesis, not a prerequisite for this engine or a promised source of paid work.
 
-- observe external and inline scripts received by the checkout;
+## What exists today
+
+The Action can:
+
+- reject unsuccessful HTTP documents and unexpected final origins/paths before baseline creation or comparison;
+- optionally require a named HTML readiness marker (present in static HTML, visible in browser mode);
+
+- observe external and inline scripts received by an authorized checkout;
 - create SHA-256 fingerprints without retaining complete script source bodies;
 - retain selected security-impacting HTTP headers;
-- compare a current observation with a previously reviewed baseline;
-- evaluate documented approvals and justifications;
-- record GitHub repository, commit, workflow, run, and Action provenance;
+- compare the current observation with a reviewed baseline;
+- evaluate documented script owners, approvals, business purposes, integrity methods, and expiry dates;
+- distinguish observed fingerprints, declared SRI, and integrity-evidence gaps;
+- bind evidence to GitHub repository, commit, workflow, run, and Action provenance;
 - return `PASS` or `REVIEW_REQUIRED`;
-- export a JSON passport, JSON comparison, immutable snapshot, and readable HTML report;
-- upload evidence before enforcing a review-required GitHub Actions gate.
+- rank workflow urgency as `P1`, `P2`, `P3`, or `NONE` without calling it vulnerability severity;
+- export JSON evidence and a readable HTML report;
+- run after a release or on a schedule;
+- optionally open/update one deduplicated GitHub review issue and resolve it after recovery; and
+- upload evidence before enforcing a review-required release gate.
 
-## Release decisions
+## Partner integration objective
+
+For a participating vendor, the intended responsibility split is:
+
+| Layer | Responsibility |
+|---|---|
+| Payment-page security vendor | Runtime observation, security event, or durable evidence export from its own product |
+| Checkout Release Passport | Minimized normalization, reviewed-baseline decision, GitHub provenance, evidence artifact, and review lifecycle |
+| Vendor/customer | Authorization, credential custody, acceptance criteria, investigation, compliance decisions, and operational response |
+
+Target lifecycle:
+
+```text
+vendor evidence
+-> authenticated and freshness-checked
+-> minimized normalization
+-> approved-baseline comparison
+-> PASS or REVIEW_REQUIRED
+-> repository-owned JSON/HTML evidence
+-> recovery PASS
+```
+
+The exact adapter, authentication, event mapping, replay handling, and outage behavior are deliberately not guessed in this repository. They are defined and tested against the participating vendor's official interface during the paid pilot.
+
+See [`docs/PARTNER_INTEGRATION_PILOT.md`](docs/PARTNER_INTEGRATION_PILOT.md).
+
+## Evidence coverage
+
+| Control objective | Current engine evidence |
+|---|---|
+| Script inventory | Browser-observed external and inline scripts, party, source, attributes, and fingerprints |
+| Authorization and necessity | Named owner, approver, approval date, expiry, and written business purpose |
+| Integrity evidence | Observed SHA-256 fingerprint and declared SRI status; missing evidence becomes a review finding |
+| Change detection | Added, removed, or modified scripts; selected security-header drift; new network origins |
+| Actionability | P1/P2/P3 findings, GitHub summary, optional issue lifecycle, and retained evidence |
+| Cadence | Configured expected interval plus GitHub Actions run history; configuration alone is never treated as proof that a run occurred |
+
+This supports technical evidence for script-management and change-detection objectives. It does not determine PCI DSS applicability, implementation sufficiency, or compliance.
+
+## Decision meanings
 
 ### `PASS`
 
-The current observation matches the reviewed baseline and required approval records.
+The current observation matches the reviewed baseline and the configured approval requirements. It means only that the configured check passed at that time.
 
 ### `REVIEW_REQUIRED`
 
-A relevant script, fingerprint, selected header, capture mode, scanner version, approval, or justification differs from the reviewed baseline.
+A relevant script, fingerprint, selected header, network origin, capture mode, engine version, approval, justification, expiry, or integrity-evidence status needs documented human review.
 
-`REVIEW_REQUIRED` does not automatically mean that a release is malicious or insecure. It means a documented human review is required before the release proceeds.
+`REVIEW_REQUIRED` does not automatically mean malicious code, a vulnerability, or compromise. `P1`, `P2`, and `P3` rank workflow urgency only.
 
-## What the product does not claim
+## Claims the product does not make
 
-Checkout Release Passport is an evidence collector and release-control tool.
+Checkout Release Passport is not:
 
-It is not:
-
-- PCI DSS certification;
-- a QSA assessment;
-- a penetration test;
-- a vulnerability scanner;
+- PCI DSS certification or a QSA assessment;
+- a penetration test or vulnerability scanner;
 - legal advice;
-- complete attack prevention;
-- customer validation;
-- an independent audit;
-- a replacement for appropriately scoped continuous production monitoring.
+- complete attack prevention or incident response;
+- real-user-session monitoring or attack blocking;
+- proof that every dynamic, geographic, consent-dependent, authenticated, or attacker-evasion path was observed;
+- an independent audit or third-party endorsement; or
+- customer or buyer validation.
 
 The tool never authorizes itself. The operator must own the target or hold explicit written authorization.
 
 ## GitHub Action quick start
 
-Add an authorized target configuration to the caller repository.
-
-### Convenient versioned reference
-
-This readable reference follows the published `v0.3.1` release:
+After the `v0.4.1` release is published and its release-integrity workflow passes, an evaluation can use the readable tag:
 
 ```yaml
 - name: Create checkout release passport
-  uses: Muhammad-Zonain/checkout-release-passport@v0.3.1
+  uses: Muhammad-Zonain/checkout-release-passport@v0.4.1
   with:
     operation: check
     config_path: .checkout-evidence/staging.json
@@ -80,313 +125,197 @@ This readable reference follows the published `v0.3.1` release:
     fail_on_review: "true"
 ```
 
-### Immutable production pinning
+For production, replace `v0.4.1` with the full 40-character commit SHA from the reviewed release. A full SHA prevents the selected Action revision from moving without an explicit workflow update.
 
-Security-conscious teams can pin the same `v0.3.1` release to its full commit SHA:
-
-```yaml
-- name: Create checkout release passport
-  uses: Muhammad-Zonain/checkout-release-passport@4cf7cf45a39bbdca6891be60b96a7590a8d61d31 # v0.3.1
-  with:
-    operation: check
-    config_path: .checkout-evidence/staging.json
-    ack_authorized: "true"
-    install_browser: "true"
-    fail_on_review: "true"
-```
-
-A full commit SHA prevents the selected Checkout Release Passport revision from changing without an explicit workflow update.
-
-The Action uploads generated evidence before enforcing a `REVIEW_REQUIRED` gate. This preserves the evidence even when the workflow job subsequently fails.
-
-The published `v0.3.1` release supports immutable caller pinning and pins
-its nested artifact-upload dependency to a reviewed full commit SHA.
+The Action pins its own nested Actions to reviewed full commit SHAs. See [`docs/SUPPLY_CHAIN_SECURITY.md`](docs/SUPPLY_CHAIN_SECURITY.md) for npm, browser-download, SBOM, attestation, and update boundaries.
 
 ## One-time baseline onboarding
 
-Every normal check requires a previously reviewed baseline.
-
-To create the initial baseline from a caller repository:
+Every normal check requires a reviewed baseline.
 
 1. Copy [`examples/github-baseline-workflow.yml`](examples/github-baseline-workflow.yml) into the caller repository.
-2. Add the authorized target configuration.
+2. Add an authorized target configuration.
 3. Run the baseline workflow manually.
 4. Download the generated baseline onboarding artifact.
-5. Review the observed scripts, selected headers, and generated approval template.
-6. Complete the approval and justification records.
-7. Commit the reviewed baseline to:
+5. Review every observed script and selected header.
+6. Complete the generated approval register.
+7. Commit only the reviewed `baseline.json` and approvals file.
+8. Enable the normal check or monitoring workflow.
 
-   ```text
-   <output_dir>/<target_id>/baseline.json
-   ```
+Do not regenerate the baseline before each check. That would erase the comparison point. Replacing an existing baseline requires an explicit reviewed reset with `force_baseline: "true"`.
 
-8. Save the completed approvals file at the configured `approvals_file` path.
-9. Enable the normal check workflow.
+## Capture readiness: configure this before a customer deployment
 
-Example baseline Action step using immutable production pinning:
-
-```yaml
-- name: Create baseline onboarding artifact
-  uses: Muhammad-Zonain/checkout-release-passport@4cf7cf45a39bbdca6891be60b96a7590a8d61d31 # v0.3.1
-  with:
-    operation: baseline
-    config_path: .checkout-evidence/staging.json
-    ack_authorized: "true"
-    install_browser: "true"
+```json
+"capture_expectations": {
+  "expected_final_url": "https://staging.example.test/checkout",
+  "ready_element_id": "checkout-ready"
+}
 ```
 
-Do not regenerate the baseline automatically before every check. Doing so would erase the comparison point that the release gate is designed to protect.
+Use a stable element id that identifies the actual checkout, not a shared header or login page. A marker that means cart/session readiness should only appear after that state is ready. Browser mode waits for visibility; static mode checks only presence in received HTML. Neither proves functional correctness.
 
-Baseline creation refuses to overwrite an existing baseline unless an explicit reviewed reset uses:
+Without explicit expectations, the final origin/path must equal the configured target URL (query values and fragments excluded); the marker check is labelled `NOT_CONFIGURED`. An intentional redirect must be declared with an authorised expected final URL. Missing markers, navigation timeouts and unacceptable HTTP statuses exit with code **1**, produce no new PASS/recovery decision, and do not reset the baseline. `--no-fail` suppresses a review gate only; it cannot suppress a capture error. Existing review issues are not resolved after a failed capture.
+
+Adding or changing the readiness policy causes `REVIEW_REQUIRED` against an older baseline. Review and deliberately approve the new baseline; do not weaken the marker to obtain a green run.
+
+## Scheduled monitoring and repository issues
+
+Copy [`examples/github-monitoring-workflow.yml`](examples/github-monitoring-workflow.yml). The example grants only:
 
 ```yaml
-force_baseline: "true"
+permissions:
+  contents: read
+  issues: write
 ```
 
-Scanner-version or capture-mode changes intentionally produce `REVIEW_REQUIRED`.
+When `alert_mode: github-issue` is enabled, `REVIEW_REQUIRED` creates or updates one target-specific issue. A later `PASS` adds recovery evidence and closes the matching issue. The caller's token is never written to evidence or logs.
 
-## Action inputs
+## Inputs
 
 | Input | Required | Default | Purpose |
 |---|---:|---:|---|
-| `operation` | No | `check` | Use `baseline` during explicit onboarding or `check` for a normal comparison. |
-| `config_path` | Yes | — | Path to the authorized target configuration in the caller repository. |
-| `ack_authorized` | Yes | — | Must be exactly `"true"` only for a target the operator owns or is explicitly authorized to inspect. |
-| `install_browser` | No | `"true"` | Installs Playwright Chromium for browser-mode configurations. |
-| `fail_on_review` | No | `"true"` | Fails the job after evidence upload when the decision is `REVIEW_REQUIRED`. |
-| `force_baseline` | No | `"false"` | Allows an explicitly reviewed replacement of an existing baseline. |
-| `artifact_suffix` | No | `default` | Provides a safe unique suffix when an operation runs more than once in one job. |
+| `operation` | No | `check` | `baseline` for explicit onboarding or `check` for comparison |
+| `config_path` | Yes | — | Authorized target configuration in the caller repository |
+| `ack_authorized` | Yes | — | Must be exactly `"true"` only for a target the operator may inspect |
+| `install_browser` | No | `"true"` | Install matching Playwright Chromium for browser mode |
+| `fail_on_review` | No | `"true"` | Fail after evidence upload on `REVIEW_REQUIRED` |
+| `force_baseline` | No | `"false"` | Permit an explicitly reviewed baseline replacement |
+| `artifact_suffix` | No | `default` | Safe unique suffix for repeated operations in one job |
+| `alert_mode` | No | `none` | `github-issue` for issue lifecycle or `none` for artifacts only |
+| `github_token` | Conditional | empty | Required only for `github-issue`; pass `${{ github.token }}` with `issues: write` |
+| `retention_days` | No | `90` | Evidence retention from 1 to 90 days |
 
-## Action outputs
+## Outputs
 
-Depending on the selected operation, the Action exposes:
+Depending on the operation, the Action exposes:
 
-- `status`
-- `target_id`
-- `snapshot_path`
-- `baseline_path`
-- `approval_template_path`
-- `passport_id`
-- `passport_path`
-- `report_path`
-- `comparison_path`
-- `passport_sha256`
+- `status`, `target_id`, and `review_priority`;
+- `snapshot_path`, `baseline_path`, and `approval_template_path`;
+- `passport_id`, `passport_path`, and `passport_sha256`;
+- `report_path` and `comparison_path`; and
+- `monitoring_event_path` and `alert_path`.
 
-Possible `status` values are:
-
-```text
-BASELINE_CREATED
-PASS
-REVIEW_REQUIRED
-```
+Possible status values are `BASELINE_CREATED`, `PASS`, and `REVIEW_REQUIRED`.
 
 ## Example target configuration
 
 ```json
 {
-  "target_id": "agency-staging-checkout",
-  "name": "Agency Staging Checkout",
+  "target_id": "authorized-staging-checkout",
+  "name": "Authorized Staging Checkout",
   "url": "https://staging.example.test/checkout",
   "output_dir": "../evidence",
   "approvals_file": "approvals.json",
   "authorization": {
     "confirmed": true,
     "confirmed_by": "Named environment owner",
-    "confirmed_at": "2026-07-19",
+    "confirmed_at": "2026-08-15",
     "scope_note": "Written authorization covers this staging checkout and passive browser observation",
-    "reference": "CHANGE-1234"
+    "reference": "CHANGE-1234",
+    "allowed_navigation_origins": ["https://staging.example.test"]
   },
   "scan": {
     "mode": "browser",
     "wait_until": "networkidle",
     "timeout_ms": 30000,
     "post_load_wait_ms": 1000
+  },
+  "monitoring": {
+    "expected_interval_hours": 24,
+    "review_owner": "Ecommerce Engineering",
+    "response_target_hours": 4
   }
 }
 ```
 
-The CLI additionally requires:
+The CLI also requires `--ack-authorized`. Neither acknowledgement replaces the operator's obligation to hold real authorization.
 
-```text
---ack-authorized
-```
+## Local verification
 
-The GitHub Action additionally requires:
-
-```yaml
-ack_authorized: "true"
-```
-
-These controls are deliberate, but neither replaces the operator's obligation to hold real authorization.
-
-## Local quick start
-
-Requirements:
-
-```text
-Node.js 20 or later
-```
-
-Install dependencies and run the tests:
+Requirements: Node.js 20 or later.
 
 ```bash
 npm ci
-npm test
+node --test
+bash scripts/verify-passport-demo.sh
 ```
 
-For browser capture mode, install Chromium once:
+Browser mode needs the matching Chromium runtime:
 
 ```bash
-npx playwright install chromium
+npx --no-install playwright install chromium
 ```
 
-Run only against a target that you own or are explicitly authorized to inspect:
+Then verify browser errors and the separate functional exercise:
 
 ```bash
-node src/cli.js baseline --config path/to/target.json --ack-authorized
-node src/cli.js check --config path/to/target.json --ack-authorized
-node src/cli.js verify-passport --file path/to/generated.passport.json
+npm run test:browser
+npm run practice:proof
 ```
 
-CLI exit codes:
+`npm run practice:watch` runs the owned exercise visibly on a desktop. `npm run practice:broken` must exit with code 1 because the total is wrong. `npm run practice` opens the manual exercise at `http://127.0.0.1:4180/checkout`. Full explanation: [update and practice guide](docs/START_HERE.md).
 
-| Exit code | Meaning |
-|---:|---|
-| `0` | `PASS` |
-| `2` | `REVIEW_REQUIRED` |
-| `1` | Configuration or runtime error |
+The local repository-owned fixture proves:
 
-## Safe local proof
-
-This repository includes a harmless, repository-owned local fixture.
-
-Run:
-
-```bash
-npm run verify:passport
+```text
+PASS -> P1 REVIEW_REQUIRED -> rollback PASS
 ```
 
-The command starts the local fixture, generates a `PASS` passport with synthetic GitHub provenance, verifies the resulting artifact, and then stops the fixture.
+It verifies passport, monitoring-event, prioritized-finding, and alert-lifecycle digests without contacting GitHub or any external checkout.
 
-## Evidence and privacy boundaries
+## Evidence and privacy boundary
 
-The evidence format intentionally excludes:
+Stored evidence intentionally excludes:
 
-- cardholder data;
-- payment form submissions;
-- form values;
-- passwords and account credentials;
-- cookies;
-- URL query values;
+- cardholder data and payment form submissions;
+- form values, passwords, credentials, cookies, and `set-cookie`;
+- URL query values and CSP nonce values, including through query-dependent URL hashes;
 - complete response bodies;
-- complete inline-script bodies;
+- complete inline-script bodies; and
 - complete external-script source bodies.
 
-Script content is fingerprinted rather than retained as complete source. Only selected security-impacting headers are preserved.
+Script bodies are hashed in memory and discarded. Stored URL query parameter names remain visible, but values are replaced before the URL fingerprint is created. This means query-value-only URL changes are deliberately not evidence; downloaded script-byte changes remain observable through the script content fingerprint.
 
-The tool must not be used to:
-
-- inspect a checkout without authorization;
-- fill or submit checkout forms;
-- enter real or test card data;
-- attempt purchases;
-- attempt authentication bypasses;
-- perform exploitation, fuzzing, or load testing;
-- collect customer or cardholder data.
-
-See [`docs/SECURITY_AND_SCOPE.md`](docs/SECURITY_AND_SCOPE.md) for the complete security and scope rules.
+Only selected security-impacting headers are retained. See [`docs/SECURITY_AND_SCOPE.md`](docs/SECURITY_AND_SCOPE.md) and [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
 
 ## Data flow and telemetry
 
-Checkout Release Passport has no maintainer-operated account, analytics endpoint, or telemetry callback.
+Checkout Release Passport has no maintainer-operated account, analytics endpoint, evidence service, or telemetry callback.
 
-It navigates to the configured authorized target and to resources that the page normally requests during the configured observation.
+Generated evidence stays in the caller's local or GitHub Actions workspace and artifacts unless the caller deliberately exports it. The Action does not send checkout evidence to TransferVerity.
 
-Generated evidence remains in the caller's local workspace or GitHub Actions workspace and artifacts unless the caller deliberately copies or exports it.
+The configured checkout can load its normal third-party resources. Those requests remain subject to the checkout operator's architecture, providers, policy, and authorization.
 
-The Action does not send collected checkout evidence to the maintainer.
+## Creator-maintained consumer proof
 
-Third-party resources loaded by the configured checkout remain subject to the checkout operator's own architecture, providers, policies, and authorization.
+The separate repository demonstrates that a released public Action can run from another GitHub repository in browser mode:
 
-## GitHub artifact provenance
+[checkout-release-passport-consumer-proof](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
 
-Eligible GitHub repositories may optionally apply GitHub's Sigstore-backed artifact attestation to a generated passport.
+It demonstrates unchanged `PASS`, controlled `REVIEW_REQUIRED`, and recovery `PASS`. It is maintained by the same creator and is not independent customer validation, an audit, certification, or third-party endorsement.
 
-See:
+## Documentation
 
-[`examples/github-workflow-attested.yml`](examples/github-workflow-attested.yml)
-
-Artifact provenance can help connect an artifact with its repository, workflow, and commit. It does not certify that the observed checkout is secure or compliant.
-
-## Separate-repository browser acceptance demo
-
-The following creator-maintained repository demonstrates that the released public Action can be called from a separate GitHub repository in browser capture mode:
-
-[Separate-Repository Browser Acceptance Demo](https://github.com/Muhammad-Zonain/checkout-release-passport-consumer-proof)
-
-The browser acceptance sequence demonstrates:
-
-```text
-Unchanged checkout          → PASS
-Controlled script change    → REVIEW_REQUIRED
-Rollback                    → PASS
-```
-
-That repository is maintained by the creator of Checkout Release Passport.
-
-It demonstrates cross-repository installation and a browser-mode fixture acceptance sequence.
-
-It is not:
-
-- an independent audit;
-- external customer validation;
-- certification;
-- a third-party endorsement;
-- PCI DSS certification;
-- a replacement for continuous production monitoring.
-
-## Why this is different
-
-Checkout Release Passport is not positioned as another broad production monitoring dashboard.
-
-It creates a release artifact that can live beside the pull request, deployment record, approval record, and client handoff:
-
-```text
-checkout change
-→ browser observation
-→ reviewed baseline comparison
-→ named approval
-→ release passport
-```
-
-The public Action is free to self-install.
-
-Paid implementation services, when requested, cover configuration, baseline review, controlled acceptance testing, evidence verification, handover, and setup support.
-
-## Documentation and examples
-
+- [`docs/PARTNER_INTEGRATION_PILOT.md`](docs/PARTNER_INTEGRATION_PILOT.md)
 - [`docs/SECURITY_AND_SCOPE.md`](docs/SECURITY_AND_SCOPE.md)
+- [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)
+- [`docs/SUPPLY_CHAIN_SECURITY.md`](docs/SUPPLY_CHAIN_SECURITY.md)
+- [`docs/OPERATIONAL_MONITORING.md`](docs/OPERATIONAL_MONITORING.md)
+- [`docs/V0.4.1_RELEASE_NOTES.md`](docs/V0.4.1_RELEASE_NOTES.md)
 - [`SECURITY.md`](SECURITY.md)
 - [`SUPPORT.md`](SUPPORT.md)
-- [`examples/github-workflow.yml`](examples/github-workflow.yml)
-- [`examples/github-baseline-workflow.yml`](examples/github-baseline-workflow.yml)
-- [`examples/github-workflow-attested.yml`](examples/github-workflow-attested.yml)
-- [`schemas`](schemas)
 - [`CHANGELOG.md`](CHANGELOG.md)
 
-## Support and private fit checks
+## Support and partner enquiries
 
-For public non-sensitive product questions, reproducible bugs, and documentation feedback, use this repository's Issues tab.
+Use GitHub Issues for non-sensitive bugs, product questions, feature requests, and documentation corrections.
 
-For a private checkout-evidence fit check or installation enquiry, email:
+For a vendor integration discussion, email:
 
-[hello@transferverity.com](mailto:hello@transferverity.com?subject=Private%20Checkout%20Evidence%20Fit%20Check)
+[hello@transferverity.com](mailto:hello@transferverity.com?subject=Vendor%20GitHub%20Evidence%20Integration)
 
-For suspected vulnerabilities, do not open a public issue. Follow [`SECURITY.md`](SECURITY.md) and use the subject:
-
-```text
-[SECURITY] Checkout Release Passport
-```
+For a suspected vulnerability, do not open a public issue. Follow [`SECURITY.md`](SECURITY.md).
 
 Never send credentials, tokens, secrets, private URLs, customer data, card data, cookies, or private repository content.
 
@@ -400,9 +329,7 @@ GitHub: [@Muhammad-Zonain](https://github.com/Muhammad-Zonain)
 
 LinkedIn: [Muhammad Zonain](https://www.linkedin.com/in/muhammad-zonain-4ab27558/)
 
-Product website:
-
-(https://checkout.transferverity.com).
+Website: [checkout.transferverity.com](https://checkout.transferverity.com)
 
 ## License
 

@@ -1,5 +1,5 @@
 name: Checkout Release Passport
-description: Create client-owned evidence of authorized checkout script and security-header changes before release.
+description: Monitor authorized checkout scripts and security headers, retain evidence, and alert on review-required changes.
 author: Muhammad Zonain
 
 branding:
@@ -33,6 +33,18 @@ inputs:
     description: Fail the job after evidence upload when the result is REVIEW_REQUIRED.
     required: false
     default: "true"
+  alert_mode:
+    description: Use none for artifact-only evidence or github-issue to open, update, and resolve a repository issue.
+    required: false
+    default: "none"
+  github_token:
+    description: Pass github.token only when alert_mode is github-issue; the caller job must grant issues write permission.
+    required: false
+    default: ""
+  retention_days:
+    description: Evidence artifact retention period. Limited to 1-90 days for compatibility with public repositories.
+    required: false
+    default: "90"
 
 outputs:
   status:
@@ -65,6 +77,15 @@ outputs:
   passport_sha256:
     description: Canonical digest of the generated release passport.
     value: ${{ steps.scan.outputs.passport_sha256 }}
+  monitoring_event_path:
+    description: Path to the machine-readable operational monitoring event.
+    value: ${{ steps.scan.outputs.monitoring_event_path }}
+  alert_path:
+    description: Path to the machine-readable GitHub alert payload.
+    value: ${{ steps.scan.outputs.alert_path }}
+  review_priority:
+    description: NONE, P1, P2, or P3 workflow review priority.
+    value: ${{ steps.scan.outputs.review_priority }}
 
 runs:
   using: composite
@@ -76,6 +97,9 @@ runs:
         OPERATION: ${{ inputs.operation }}
         FORCE_BASELINE: ${{ inputs.force_baseline }}
         ARTIFACT_SUFFIX: ${{ inputs.artifact_suffix }}
+        ALERT_MODE: ${{ inputs.alert_mode }}
+        GITHUB_TOKEN_INPUT: ${{ inputs.github_token }}
+        RETENTION_DAYS: ${{ inputs.retention_days }}
       run: |
         if [ "$ACK_AUTHORIZED" != "true" ]; then
           echo "Refusing to run: ack_authorized must be exactly true for a target you own or are explicitly authorized to inspect."
@@ -93,17 +117,29 @@ runs:
           echo "Refusing to run: artifact_suffix must contain 1-64 letters, numbers, dots, underscores, or hyphens."
           exit 1
         fi
+        if [ "$ALERT_MODE" != "none" ] && [ "$ALERT_MODE" != "github-issue" ]; then
+          echo "Refusing to run: alert_mode must be exactly none or github-issue."
+          exit 1
+        fi
+        if [ "$ALERT_MODE" = "github-issue" ] && [ -z "$GITHUB_TOKEN_INPUT" ]; then
+          echo "Refusing to run: github_token is required when alert_mode is github-issue."
+          exit 1
+        fi
+        if [[ ! "$RETENTION_DAYS" =~ ^[0-9]+$ ]] || [ "$RETENTION_DAYS" -lt 1 ] || [ "$RETENTION_DAYS" -gt 90 ]; then
+          echo "Refusing to run: retention_days must be an integer from 1 to 90."
+          exit 1
+        fi
 
     - name: Install release-passport dependencies
       shell: bash
-      run: npm ci --ignore-scripts --prefix "$GITHUB_ACTION_PATH"
+      run: npm ci --ignore-scripts --no-audit --no-fund --prefix "$GITHUB_ACTION_PATH"
 
     - name: Install Chromium for browser mode
       if: ${{ inputs.install_browser == 'true' }}
       shell: bash
       run: |
         cd "$GITHUB_ACTION_PATH"
-        npx playwright install --with-deps chromium
+        npx --no-install playwright install --with-deps chromium
 
     - name: Create checkout release evidence
       id: scan
@@ -114,6 +150,7 @@ runs:
         FORCE_BASELINE: ${{ inputs.force_baseline }}
         CHECKOUT_PASSPORT_ACTION_REPOSITORY: ${{ github.action_repository }}
         CHECKOUT_PASSPORT_ACTION_REF: ${{ github.action_ref }}
+        CHECKOUT_PASSPORT_ALERT_MODE: ${{ inputs.alert_mode }}
       run: |
         if [ "$OPERATION" = "baseline" ]; then
           if [ "$FORCE_BASELINE" = "true" ]; then
@@ -131,7 +168,7 @@ runs:
       with:
         name: checkout-release-passport-${{ steps.scan.outputs.target_id }}-baseline-${{ github.job }}-${{ inputs.artifact_suffix }}-${{ github.run_id }}-${{ github.run_attempt }}
         if-no-files-found: error
-        retention-days: 30
+        retention-days: ${{ inputs.retention_days }}
         path: |
           ${{ steps.scan.outputs.snapshot_path }}
           ${{ steps.scan.outputs.baseline_path }}
@@ -143,12 +180,22 @@ runs:
       with:
         name: checkout-release-passport-${{ steps.scan.outputs.target_id }}-check-${{ github.job }}-${{ inputs.artifact_suffix }}-${{ github.run_id }}-${{ github.run_attempt }}
         if-no-files-found: error
-        retention-days: 30
+        retention-days: ${{ inputs.retention_days }}
         path: |
           ${{ steps.scan.outputs.passport_path }}
           ${{ steps.scan.outputs.snapshot_path }}
           ${{ steps.scan.outputs.report_path }}
           ${{ steps.scan.outputs.comparison_path }}
+          ${{ steps.scan.outputs.monitoring_event_path }}
+          ${{ steps.scan.outputs.alert_path }}
+
+    - name: Synchronize GitHub review issue
+      if: ${{ inputs.operation == 'check' && inputs.alert_mode == 'github-issue' }}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        ALERT_PATH: ${{ steps.scan.outputs.alert_path }}
+      run: node "$GITHUB_ACTION_PATH/src/github-alert.js" --file "$ALERT_PATH"
 
     - name: Enforce review gate
       if: ${{ inputs.operation == 'check' && inputs.fail_on_review == 'true' && steps.scan.outputs.status == 'REVIEW_REQUIRED' }}

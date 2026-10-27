@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://checkout.transferverity.com/schemas/review-alert.schema.json",
+  "title": "Checkout Review Alert",
+  "type": "object",
+  "required": ["schema_version", "kind", "alert_id", "alert_sha256", "created_at", "action", "dedupe_key", "issue_marker", "title", "body_markdown", "event_id", "target_id", "decision", "review_priority"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "kind": { "const": "checkout-review-alert" },
+    "alert_id": { "type": "string", "pattern": "^cra_[a-f0-9]{20}$" },
+    "alert_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "action": { "enum": ["open_or_update", "resolve_if_open"] },
+    "dedupe_key": { "type": "string" },
+    "issue_marker": { "type": "string" },
+    "title": { "type": "string" },
+    "body_markdown": { "type": "string" },
+    "suggested_labels": { "type": "array", "items": { "type": "string" } },
+    "event_id": { "type": "string", "pattern": "^cme_[a-f0-9]{20}$" },
+    "target_id": { "type": "string" },
+    "decision": { "enum": ["PASS", "REVIEW_REQUIRED"] },
+    "review_priority": { "enum": ["NONE", "P1", "P2", "P3"] }
+  },
+  "additionalProperties": false
+}

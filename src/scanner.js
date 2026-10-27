@@ -2,9 +2,23 @@ import { parse } from "parse5";
 import { digestObject, sha256 } from "./hash.js";
 import { getOrigin, sanitizeUrl, selectSecurityHeaders } from "./privacy.js";
 import { ENGINE_VERSION } from "./version.js";
+import { assertDocumentReady, CaptureReadinessError, readinessEvidence } from "./readiness.js";
 
 function isHttpOrigin(origin) {
   return origin.startsWith("http://") || origin.startsWith("https://");
+}
+
+function allowedNavigationOrigins(config) {
+  return config.authorization.allowed_navigation_origins ?? [getOrigin(config.url)];
+}
+
+function navigationOriginAllowed(config, rawUrl) {
+  return allowedNavigationOrigins(config).includes(getOrigin(rawUrl));
+}
+
+function privacySafeErrorMessage(error, rawUrl) {
+  const original = String(error?.message ?? error?.name ?? "Request failed");
+  return original.replaceAll(String(rawUrl), sanitizeUrl(rawUrl)).slice(0, 500);
 }
 
 function collectNetworkOrigin(originMap, request) {
@@ -40,7 +54,7 @@ async function captureScriptResponse(response, responseMap, warnings) {
     warnings.push({
       code: "SCRIPT_BODY_UNAVAILABLE",
       url: sanitizeUrl(response.url()),
-      message: error.message,
+      message: privacySafeErrorMessage(error, response.url()),
     });
   }
 }
@@ -70,19 +84,56 @@ async function scanWithBrowser(config, options = {}) {
       serviceWorkers: "block",
     });
     const page = await context.newPage();
+    let blockedNavigationOrigin = null;
+    let latestDocumentResponse = null;
+
+    await page.route("**/*", async (route) => {
+      const request = route.request();
+      if (
+        request.isNavigationRequest() &&
+        request.frame() === page.mainFrame() &&
+        !navigationOriginAllowed(config, request.url())
+      ) {
+        blockedNavigationOrigin = getOrigin(request.url());
+        await route.abort("blockedbyclient");
+        return;
+      }
+      await route.continue();
+    });
 
     page.on("request", (request) => collectNetworkOrigin(networkOrigins, request));
     page.on("response", (response) => {
+      if (response.request().isNavigationRequest() && response.frame() === page.mainFrame()) {
+        latestDocumentResponse = response;
+      }
       responseTasks.push(captureScriptResponse(response, scriptResponses, warnings));
     });
 
-    const mainResponse = await page.goto(config.url, {
-      waitUntil: config.scan.wait_until,
-      timeout: config.scan.timeout_ms,
-    });
+    let mainResponse;
+    try {
+      mainResponse = await page.goto(config.url, {
+        waitUntil: config.scan.wait_until,
+        timeout: config.scan.timeout_ms,
+      });
+    } catch (error) {
+      if (blockedNavigationOrigin) {
+        throw new Error(`Main navigation left the authorized origins and was blocked: ${blockedNavigationOrigin}`);
+      }
+      throw new CaptureReadinessError("CAPTURE_NAVIGATION_FAILED", "Navigation failed or timed out. No successful capture was produced.");
+    }
 
     if (!mainResponse) {
       throw new Error("Navigation completed without a main document response");
+    }
+    assertDocumentReady(config, mainResponse.status(), page.url());
+
+    const markerId = config.capture_expectations?.ready_element_id;
+    if (markerId) {
+      try {
+        await page.locator(`#${markerId}`).waitFor({ state: "visible", timeout: config.scan.timeout_ms });
+      } catch {
+        throw new CaptureReadinessError("CAPTURE_MARKER_MISSING", "The configured page-ready element did not become visible before timeout.");
+      }
     }
 
     if (config.scan.post_load_wait_ms > 0) {
@@ -91,6 +142,14 @@ async function scanWithBrowser(config, options = {}) {
     await Promise.allSettled(responseTasks);
 
     const finalRawUrl = page.url();
+    if (blockedNavigationOrigin || !navigationOriginAllowed(config, finalRawUrl)) {
+      throw new Error(`Main navigation left the authorized origins: ${getOrigin(finalRawUrl)}`);
+    }
+    const documentResponse = latestDocumentResponse ?? mainResponse;
+    assertDocumentReady(config, documentResponse.status(), finalRawUrl);
+    if (markerId && !await page.locator(`#${markerId}`).isVisible()) {
+      throw new CaptureReadinessError("CAPTURE_MARKER_MISSING", "The page-ready element disappeared before capture.");
+    }
     const firstPartyOrigin = getOrigin(finalRawUrl);
     const domScripts = await page.locator("script").evaluateAll((nodes) =>
       nodes.map((node, domIndex) => ({
@@ -110,11 +169,12 @@ async function scanWithBrowser(config, options = {}) {
     const scripts = domScripts.map((script) => {
       if (script.src) {
         const responseEvidence = scriptResponses.get(script.src) ?? {};
+        const sanitizedSource = sanitizeUrl(script.src);
         return {
           dom_index: script.dom_index,
           kind: "external",
-          src: sanitizeUrl(script.src),
-          src_sha256: sha256(script.src),
+          src: sanitizedSource,
+          src_sha256: sha256(sanitizedSource),
           origin: getOrigin(script.src),
           first_party: getOrigin(script.src) === firstPartyOrigin,
           type: script.type,
@@ -166,21 +226,23 @@ async function scanWithBrowser(config, options = {}) {
         target_id: config.target_id,
         name: config.name,
         requested_url: sanitizeUrl(config.url),
-        requested_url_sha256: sha256(config.url),
+        requested_url_sha256: sha256(sanitizeUrl(config.url)),
         authorization: {
           confirmed: true,
           confirmed_by: config.authorization.confirmed_by,
           confirmed_at: config.authorization.confirmed_at,
           scope_note: config.authorization.scope_note,
+          allowed_navigation_origins: allowedNavigationOrigins(config),
         },
       },
       page: {
         final_url: sanitizeUrl(finalRawUrl),
-        final_url_sha256: sha256(finalRawUrl),
+        final_url_sha256: sha256(sanitizeUrl(finalRawUrl)),
         title: await page.title(),
-        http_status: mainResponse.status(),
+        http_status: documentResponse.status(),
+        readiness: readinessEvidence(config, markerId ? "VISIBLE" : "NOT_CONFIGURED"),
         rendered_dom_sha256: sha256(renderedHtml),
-        security_headers: selectSecurityHeaders(mainResponse.headers()),
+        security_headers: selectSecurityHeaders(documentResponse.headers()),
       },
       scripts,
       network_origins: summarizeOrigins(networkOrigins, firstPartyOrigin),
@@ -230,6 +292,11 @@ function attributes(node) {
   return Object.fromEntries((node.attrs ?? []).map((attribute) => [attribute.name, attribute.value]));
 }
 
+function hasElementId(node, id) {
+  return (node.tagName && attributes(node).id === id) ||
+    (node.childNodes ?? []).some((child) => hasElementId(child, id));
+}
+
 function nodeText(node) {
   return (node.childNodes ?? [])
     .map((child) => (child.nodeName === "#text" ? child.value : nodeText(child)))
@@ -261,13 +328,13 @@ async function readLimitedBody(response, limitBytes) {
   return Buffer.concat(chunks);
 }
 
-async function safeFetch(rawUrl, timeoutMs) {
+async function safeFetch(rawUrl, timeoutMs, redirect = "follow") {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(rawUrl, {
       method: "GET",
-      redirect: "follow",
+      redirect,
       signal: controller.signal,
       headers: {
         "user-agent": "CheckoutEvidenceEngine/0.1 (authorized passive evidence collection)",
@@ -279,12 +346,28 @@ async function safeFetch(rawUrl, timeoutMs) {
   }
 }
 
+async function fetchAuthorizedDocument(config) {
+  let currentUrl = config.url;
+  for (let redirectCount = 0; redirectCount <= 10; redirectCount += 1) {
+    if (!navigationOriginAllowed(config, currentUrl)) {
+      throw new Error(`Main navigation left the authorized origins: ${getOrigin(currentUrl)}`);
+    }
+    const response = await safeFetch(currentUrl, config.scan.timeout_ms, "manual");
+    if (![301, 302, 303, 307, 308].includes(response.status)) return response;
+    const location = response.headers.get("location");
+    if (!location) return response;
+    currentUrl = new URL(location, currentUrl).href;
+  }
+  throw new Error("Main navigation exceeded the 10-redirect safety limit");
+}
+
 async function captureStaticScript(script, config, originMap, warnings, firstPartyOrigin) {
+  const sanitizedSource = script.src ? sanitizeUrl(script.src) : null;
   const common = {
     dom_index: script.dom_index,
     kind: script.src ? "external" : "inline",
-    src: script.src ? sanitizeUrl(script.src) : null,
-    src_sha256: script.src ? sha256(script.src) : null,
+    src: sanitizedSource,
+    src_sha256: sanitizedSource ? sha256(sanitizedSource) : null,
     origin: script.src ? getOrigin(script.src) : firstPartyOrigin,
     first_party: script.src ? getOrigin(script.src) === firstPartyOrigin : true,
     type: script.type,
@@ -336,7 +419,7 @@ async function captureStaticScript(script, config, originMap, warnings, firstPar
     warnings.push({
       code: "SCRIPT_FETCH_FAILED",
       url: sanitizeUrl(script.src),
-      message: error.message,
+      message: privacySafeErrorMessage(error, script.src),
     });
     return {
       ...common,
@@ -358,13 +441,15 @@ async function scanWithStaticFetch(config) {
   const networkOrigins = new Map();
   addObservedOrigin(networkOrigins, config.url, "document");
 
-  const mainResponse = await safeFetch(config.url, config.scan.timeout_ms);
-  if (mainResponse.status >= 400) {
-    throw new Error(`Target returned HTTP ${mainResponse.status}`);
-  }
+  const mainResponse = await fetchAuthorizedDocument(config);
+  assertDocumentReady(config, mainResponse.status, mainResponse.url);
   const htmlBuffer = await readLimitedBody(mainResponse, 5 * 1024 * 1024);
   const html = htmlBuffer.toString("utf8");
   const document = parse(html);
+  const markerId = config.capture_expectations?.ready_element_id;
+  if (markerId && !hasElementId(document, markerId)) {
+    throw new CaptureReadinessError("CAPTURE_MARKER_MISSING", "The configured page-ready element is absent from the received HTML. Use browser mode for a JavaScript-rendered marker.");
+  }
   const finalRawUrl = mainResponse.url;
   const firstPartyOrigin = getOrigin(finalRawUrl);
   if (getOrigin(config.url) !== firstPartyOrigin) {
@@ -419,19 +504,21 @@ async function scanWithStaticFetch(config) {
       target_id: config.target_id,
       name: config.name,
       requested_url: sanitizeUrl(config.url),
-      requested_url_sha256: sha256(config.url),
+      requested_url_sha256: sha256(sanitizeUrl(config.url)),
       authorization: {
         confirmed: true,
         confirmed_by: config.authorization.confirmed_by,
         confirmed_at: config.authorization.confirmed_at,
         scope_note: config.authorization.scope_note,
+        allowed_navigation_origins: allowedNavigationOrigins(config),
       },
     },
     page: {
       final_url: sanitizeUrl(finalRawUrl),
-      final_url_sha256: sha256(finalRawUrl),
+      final_url_sha256: sha256(sanitizeUrl(finalRawUrl)),
       title: titleNode ? nodeText(titleNode).trim() : "",
       http_status: mainResponse.status,
+      readiness: readinessEvidence(config, markerId ? "PRESENT" : "NOT_CONFIGURED"),
       rendered_dom_sha256: sha256(htmlBuffer),
       security_headers: selectSecurityHeaders(Object.fromEntries(mainResponse.headers.entries())),
     },

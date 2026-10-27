@@ -19,6 +19,13 @@ function externalScript(src, hash) {
   };
 }
 
+const HASH = {
+  old: "a".repeat(64),
+  newer: "b".repeat(64),
+  added: "c".repeat(64),
+  same: "d".repeat(64),
+};
+
 function snapshot({ scripts, csp = "default-src 'self'", origins = [] }) {
   return {
     snapshot_sha256: "a".repeat(64),
@@ -49,13 +56,13 @@ const approvalDocument = {
 
 test("comparison detects modified and added scripts, headers, origins, and approval gaps", () => {
   const baseline = snapshot({
-    scripts: [externalScript("https://shop.example/a.js", "old-hash")],
+    scripts: [externalScript("https://shop.example/a.js", HASH.old)],
     origins: [{ origin: "https://shop.example", first_party: true, request_count: 1, resource_types: ["document"] }],
   });
   const current = snapshot({
     scripts: [
-      externalScript("https://shop.example/a.js", "new-hash"),
-      externalScript("https://cdn.example/b.js", "b-hash"),
+      externalScript("https://shop.example/a.js", HASH.newer),
+      externalScript("https://cdn.example/b.js", HASH.added),
     ],
     csp: "default-src 'self'; connect-src 'self'",
     origins: [
@@ -73,6 +80,8 @@ test("comparison detects modified and added scripts, headers, origins, and appro
   assert.equal(result.summary.scripts_unapproved, 1);
   assert.equal(result.summary.security_headers_changed, 1);
   assert.equal(result.summary.network_origins_added, 1);
+  assert.equal(result.summary.review_priority, "P1");
+  assert.equal(result.summary.scripts_integrity_unavailable, 0);
   assert.deepEqual(
     result.review_reasons,
     ["scripts_added", "scripts_modified", "security_headers_changed", "network_origins_added", "unapproved_scripts_present"],
@@ -81,7 +90,7 @@ test("comparison detects modified and added scripts, headers, origins, and appro
 
 test("comparison passes when evidence is unchanged and every script is approved", () => {
   const unchanged = snapshot({
-    scripts: [externalScript("https://shop.example/a.js", "same-hash")],
+    scripts: [externalScript("https://shop.example/a.js", HASH.same)],
     origins: [{ origin: "https://shop.example", first_party: true, request_count: 2, resource_types: ["document", "script"] }],
   });
   const current = structuredClone(unchanged);
@@ -90,12 +99,13 @@ test("comparison passes when evidence is unchanged and every script is approved"
   const result = compareSnapshots(unchanged, current, approvalDocument, new Date("2026-07-18T00:00:00Z"));
   assert.equal(result.status, "PASS");
   assert.equal(result.summary.scripts_approved, 1);
+  assert.equal(result.review.priority, "NONE");
   assert.deepEqual(result.review_reasons, []);
 });
 
 test("comparison requires review when scanner version or capture mode changes", () => {
   const baseline = snapshot({
-    scripts: [externalScript("https://shop.example/a.js", "same-hash")],
+    scripts: [externalScript("https://shop.example/a.js", HASH.same)],
   });
   const current = structuredClone(baseline);
   current.snapshot_sha256 = "d".repeat(64);
@@ -108,4 +118,19 @@ test("comparison requires review when scanner version or capture mode changes", 
   assert.equal(result.summary.scanner_version_changed, true);
   assert.equal(result.summary.capture_mode_changed, true);
   assert.deepEqual(result.review_reasons, ["scanner_version_changed", "capture_mode_changed"]);
+});
+
+test("comparison preserves duplicate external-script occurrences", () => {
+  const first = externalScript("https://shop.example/a.js", HASH.same);
+  const second = { ...externalScript("https://shop.example/a.js", HASH.same), dom_index: 1 };
+  const baseline = snapshot({ scripts: [first, second] });
+  const current = snapshot({
+    scripts: [first, { ...second, content_sha256: HASH.newer }],
+  });
+  current.snapshot_sha256 = "e".repeat(64);
+
+  const result = compareSnapshots(baseline, current, approvalDocument, new Date("2026-07-18T00:00:00Z"));
+  assert.equal(result.summary.scripts_total, 2);
+  assert.equal(result.summary.scripts_modified, 1);
+  assert.match(result.scripts.modified[0].key, /#1$/);
 });

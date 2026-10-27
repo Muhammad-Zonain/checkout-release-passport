@@ -7,17 +7,22 @@ permissions:
   contents: read
   id-token: write
   attestations: write
+  artifact-metadata: write
 
 jobs:
   checkout-release-passport:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Create checkout release passport
         id: passport
-        uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.0
+        # For production, replace v0.4.1 with the reviewed release's full commit SHA.
+        uses: Muhammad-Zonain/checkout-release-passport@v0.4.1
         with:
           operation: check
           config_path: .checkout-evidence/staging.json
@@ -28,6 +33,6 @@ jobs:
       # Available for public repositories on current GitHub Free/Pro/Team plans.
       # Private/internal repositories require GitHub Enterprise Cloud.
       - name: Attest passport provenance
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: ${{ steps.passport.outputs.passport_path }}

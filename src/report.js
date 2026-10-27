@@ -19,6 +19,29 @@ function scriptLabel(script) {
   return script.kind === "external" ? script.src : `Inline script #${script.dom_index}`;
 }
 
+function renderApproval(approval = { status: "unapproved" }) {
+  if (approval.status === "approved") {
+    return `<span class="pill approved">Approved</span><br><small>${escapeHtml(approval.owner)} · ${escapeHtml(approval.purpose)}</small>`;
+  }
+  if (approval.status === "expired") {
+    return `<span class="pill expired">Expired</span><br><small>${escapeHtml(approval.approval_id)} · ${escapeHtml(approval.expires_at)}</small>`;
+  }
+  if (approval.status === "pending") {
+    return `<span class="pill expired">Not yet effective</span><br><small>${escapeHtml(approval.approval_id)} · ${escapeHtml(approval.approved_at)}</small>`;
+  }
+  return '<span class="pill unapproved">Unapproved</span>';
+}
+
+function renderIntegrity(evidence = {}) {
+  if (evidence.status === "observed") {
+    return '<span class="pill approved">Observed hash</span>';
+  }
+  if (evidence.status === "declared") {
+    return '<span class="pill declared">SRI declared</span>';
+  }
+  return '<span class="pill unapproved">Unavailable</span>';
+}
+
 function renderRows(rows, emptyMessage, columns) {
   if (!rows.length) {
     return `<p class="empty">${escapeHtml(emptyMessage)}</p>`;
@@ -45,18 +68,25 @@ function renderChangeList(title, scripts, emptyMessage) {
   return `<section><h2>${escapeHtml(title)}</h2>${renderRows(scripts, emptyMessage, columns)}</section>`;
 }
 
-export function generateHtmlReport(config, baseline, current, comparison) {
+export function generateHtmlReport(config, baseline, current, comparison, controlCoverage = null) {
   const statusClass = comparison.status === "PASS" ? "pass" : "review";
+  const review = comparison.review ?? { priority: comparison.status === "PASS" ? "NONE" : "P3", findings: [] };
+  const metricKeys = [
+    "scripts_total",
+    "scripts_approved",
+    "scripts_integrity_unavailable",
+    "scripts_added",
+    "scripts_modified",
+    "security_headers_changed",
+  ];
   const inventoryColumns = [
     { label: "Script", render: (row) => `<code>${escapeHtml(scriptLabel(row))}</code>` },
     { label: "Party", render: (row) => (row.first_party ? "First party" : "Third party") },
     { label: "Content hash", render: (row) => `<code>${escapeHtml(shortHash(row.content_sha256))}</code>` },
+    { label: "Integrity evidence", render: (row) => renderIntegrity(row.integrity_evidence) },
     {
       label: "Approval",
-      render: (row) =>
-        row.approval.status === "approved"
-          ? `<span class="pill approved">Approved</span><br><small>${escapeHtml(row.approval.owner)} · ${escapeHtml(row.approval.purpose)}</small>`
-          : '<span class="pill unapproved">Unapproved</span>',
+      render: (row) => renderApproval(row.approval),
     },
   ];
   const modifiedRows = comparison.scripts.modified.map((entry) => ({
@@ -86,7 +116,8 @@ export function generateHtmlReport(config, baseline, current, comparison) {
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:18px; }
     .metric { border:1px solid var(--line); border-radius:10px; padding:13px; } .metric strong { display:block; font-size:24px; }
     .table-wrap { overflow-x:auto; } table { width:100%; border-collapse:collapse; } th,td { text-align:left; vertical-align:top; padding:10px; border-bottom:1px solid var(--line); } th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
-    .pill { display:inline-block; border-radius:999px; padding:3px 8px; font-size:12px; font-weight:700; } .approved { color:var(--green); background:var(--green-bg); } .unapproved { color:var(--red); background:var(--red-bg); }
+    .pill { display:inline-block; border-radius:999px; padding:3px 8px; font-size:12px; font-weight:700; } .approved { color:var(--green); background:var(--green-bg); } .unapproved { color:var(--red); background:var(--red-bg); } .expired,.declared { color:var(--amber); background:var(--amber-bg); }
+    .priority { margin-left:7px; } .priority.P1 { color:var(--red); background:var(--red-bg); } .priority.P2,.priority.P3 { color:var(--amber); background:var(--amber-bg); } .priority.NONE { color:var(--green); background:var(--green-bg); }
     .empty { color:var(--muted); font-style:italic; } .notice { border-left:4px solid var(--amber); padding-left:12px; }
     dl { display:grid; grid-template-columns:max-content 1fr; gap:7px 14px; } dt { color:var(--muted); } dd { margin:0; overflow-wrap:anywhere; }
     @media (max-width:640px) { main { width:min(100% - 18px,1120px); margin-top:10px; } header,section { padding:16px; } dl { grid-template-columns:1fr; gap:2px; } dd { margin-bottom:8px; } }
@@ -95,10 +126,11 @@ export function generateHtmlReport(config, baseline, current, comparison) {
 <body><main>
   <header>
     <span class="status ${statusClass}">${escapeHtml(comparison.status)}</span>
+    <span class="pill priority ${escapeHtml(review.priority)}">${escapeHtml(review.priority)} · ${escapeHtml(review.label ?? "Review priority")}</span>
     <h1>${escapeHtml(config.name)}</h1>
-    <p class="muted">Authorized script inventory and change-evidence report</p>
+    <p class="muted">Authorized script inventory, integrity evidence, and operational change-control report</p>
     <div class="grid">
-      ${Object.entries(comparison.summary).map(([label, value]) => `<div class="metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label.replaceAll("_", " "))}</span></div>`).join("")}
+      ${metricKeys.filter((key) => comparison.summary[key] !== undefined).map((key) => `<div class="metric"><strong>${escapeHtml(comparison.summary[key])}</strong><span>${escapeHtml(key.replaceAll("_", " "))}</span></div>`).join("")}
     </div>
   </header>
 
@@ -115,6 +147,33 @@ export function generateHtmlReport(config, baseline, current, comparison) {
       <dt>Review reasons</dt><dd>${comparison.review_reasons.length ? comparison.review_reasons.map(escapeHtml).join(", ") : "None"}</dd>
     </dl>
   </section>
+
+  <section>
+    <h2>Page readiness and functional scope</h2>
+    <p>Expected page: <code>${escapeHtml(current.page?.readiness?.expected_final_url ?? "Not recorded in this older snapshot")}</code></p>
+    <p>Ready marker: ${escapeHtml(current.page?.readiness?.ready_element_id ?? "Not configured")}; check: ${escapeHtml(current.page?.readiness?.marker_check ?? "Not recorded")}.</p>
+    <p>PASS refers to the configured script/header evidence comparison. Cart actions, totals, payment processing and order creation have not been functionally tested by this capture.</p>
+    <h2>Prioritized review findings</h2>
+    <p class="muted">Priority ranks workflow urgency. It is not a vulnerability severity or proof of compromise.</p>
+    ${renderRows(review.findings, "No active review findings.", [
+      { label: "Priority", render: (row) => `<span class="pill priority ${escapeHtml(row.priority)}">${escapeHtml(row.priority)}</span>` },
+      { label: "Finding", key: "type" },
+      { label: "Why review", key: "message" },
+    ])}
+  </section>
+
+  ${controlCoverage ? `<section>
+    <h2>Operational control coverage</h2>
+    <dl>
+      <dt>Script management</dt><dd><strong>${escapeHtml(controlCoverage.script_management.status)}</strong> · ${escapeHtml(controlCoverage.script_management.active_approvals)}/${escapeHtml(controlCoverage.script_management.scripts_observed)} active approvals · ${escapeHtml(controlCoverage.script_management.integrity_evidence_available)}/${escapeHtml(controlCoverage.script_management.scripts_observed)} with integrity evidence</dd>
+      <dt>Change detection</dt><dd><strong>${escapeHtml(controlCoverage.change_detection.status)}</strong> · scripts, selected security headers, and network origins evaluated against the reviewed baseline</dd>
+      <dt>Expected interval</dt><dd>${escapeHtml(controlCoverage.operations.expected_interval_hours)} hour(s); verify actual execution in retained workflow run history</dd>
+      <dt>Review owner</dt><dd>${escapeHtml(controlCoverage.operations.review_owner)}</dd>
+      <dt>Response target</dt><dd>${escapeHtml(controlCoverage.operations.response_target_hours)} hour(s)</dd>
+      <dt>Notification mode</dt><dd>${escapeHtml(controlCoverage.operations.notification_mode)}</dd>
+    </dl>
+    <p class="muted">${escapeHtml(controlCoverage.boundary)}</p>
+  </section>` : ""}
 
   ${renderChangeList("Added scripts", comparison.scripts.added, "No scripts were added.")}
   ${renderChangeList("Removed scripts", comparison.scripts.removed, "No scripts were removed.")}
@@ -140,9 +199,9 @@ export function generateHtmlReport(config, baseline, current, comparison) {
 
   <section class="notice">
     <h2>Scope and limitations</h2>
-    <p>This report supports evidence collection; it is not a PCI DSS certification, legal opinion, penetration test, or guarantee of security.</p>
+    <p>This report supports technical control evidence; it is not a PCI DSS certification, legal opinion, penetration test, proof of compromise, or guarantee of security.</p>
     <p>The engine does not click, fill, submit, authenticate, purchase, exploit, or retain response bodies, cookies, form values, or URL query values.</p>
-    <p>${current.engine.capture_mode === "static" ? "Static mode does not execute JavaScript. Dynamically injected scripts, runtime requests, and scripts loaded only after interaction are outside this report and require separately authorized browser-mode coverage." : "Dynamic scripts that load only after user interaction may require a separately authorized and reviewed future workflow."}</p>
+    <p>${current.engine.capture_mode === "static" ? "Static mode does not execute JavaScript. Dynamically injected scripts, runtime requests, and scripts loaded only after interaction are outside this report and require separately authorized browser-mode coverage." : "Browser mode is a scheduled or release-time observation, not real-user-session monitoring. Scripts that load only after unconfigured interactions, geography, consent, or authentication may remain outside this observation."}</p>
   </section>
 </main></body></html>`;
 }

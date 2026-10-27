@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "target_id": "local-demo-checkout",
   "approvals": [
     {
@@ -11,7 +11,8 @@
       "purpose": "Render the non-transactional demonstration payment component",
       "approved_by": "Local Demo Operator",
       "approved_at": "2026-07-18",
-      "expires_at": null
+      "expires_at": null,
+      "integrity_method": "observed-sha256"
     },
     {
       "approval_id": "demo-storefront",
@@ -22,7 +23,8 @@
       "purpose": "Initialize the harmless local checkout demonstration",
       "approved_by": "Local Demo Operator",
       "approved_at": "2026-07-18",
-      "expires_at": null
+      "expires_at": null,
+      "integrity_method": "observed-sha256"
     }
   ]
 }

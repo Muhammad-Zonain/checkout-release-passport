@@ -29,6 +29,7 @@ export function buildReleasePassport({
   comparisonPath,
   reportPath,
   reportHtml,
+  controlCoverage,
   env = process.env,
 }) {
   const createdAt = new Date().toISOString();
@@ -58,6 +59,8 @@ export function buildReleasePassport({
     decision: {
       status: comparison.status,
       review_reasons: comparison.review_reasons,
+      review_priority: comparison.review?.priority ?? null,
+      findings: comparison.review?.findings ?? [],
       summary: comparison.summary,
     },
     evidence: {
@@ -65,6 +68,7 @@ export function buildReleasePassport({
       current_snapshot_sha256: current.snapshot_sha256,
       comparison_sha256: digestObject(comparison),
       report_sha256: sha256(reportHtml),
+      control_coverage_sha256: controlCoverage ? digestObject(controlCoverage) : null,
       comparison_file: path.basename(comparisonPath),
       report_file: path.basename(reportPath),
     },
@@ -78,7 +82,7 @@ export function buildReleasePassport({
     limitations: [
       "This passport records what the configured authorized check observed; it is not PCI DSS certification.",
       "It is not a penetration test, legal opinion, or guarantee that every script, header, vulnerability, or attack was detected.",
-      "A pre-release check does not replace appropriately scoped continuous production monitoring.",
+      "Scheduled and release-time observations are point-in-time checks; they do not provide real-user-session protection or attack blocking.",
     ],
   };
   const passportSha256 = digestObject(core);

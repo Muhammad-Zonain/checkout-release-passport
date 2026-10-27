@@ -9,12 +9,16 @@ permissions:
 jobs:
   reviewed-baseline:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Create baseline onboarding artifact
-        uses: Muhammad-Zonain/checkout-release-passport@008bd7a28e42c556069868a05b0d723f77f162e5 # v0.3.0
+        # For production, replace v0.4.1 with the reviewed release's full commit SHA.
+        uses: Muhammad-Zonain/checkout-release-passport@v0.4.1
         with:
           operation: baseline
           config_path: .checkout-evidence/staging.json
